@@ -10,14 +10,18 @@ export default function Navbar() {
           <span>ResumeAI</span>
         </Link>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <Link to="/" className={`btn btn-ghost ${pathname === "/" ? "" : ""}`} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
+          <Link to="/" className={pathname === "/" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
             Upload
           </Link>
-          {pathname === "/dashboard" && (
-            <Link to="/dashboard" className="btn btn-primary" style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
-              Dashboard
-            </Link>
-          )}
+          <Link to="/dashboard" className={pathname === "/dashboard" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
+            Dashboard
+          </Link>
+          <Link to="/generate-resume" className={pathname === "/generate-resume" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
+            Generate Resume
+          </Link>
+          <Link to="/mentor-bot" className={pathname === "/mentor-bot" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
+            Mentor Bot
+          </Link>
         </div>
       </div>
     </nav>

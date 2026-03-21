@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
+import GenerateResume from "./pages/GenerateResume";
+import MentorBot from "./pages/MentorBot";
 
 export default function App() {
   return (
@@ -18,6 +20,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/generate-resume" element={<GenerateResume />} />
+          <Route path="/mentor-bot" element={<MentorBot />} />
         </Routes>
       </div>
     </BrowserRouter>

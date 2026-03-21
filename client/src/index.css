@@ -224,8 +224,91 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ─── Resume Generator ───────────────────────────────────────────────────── */
+.resume-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.resume-input,
+.resume-textarea {
+  width: 100%;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.resume-input:focus,
+.resume-textarea:focus {
+  border-color: var(--border-accent);
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
+}
+
+.resume-textarea {
+  min-height: 90px;
+  resize: vertical;
+  margin-bottom: 10px;
+  font-family: inherit;
+}
+
+/* ─── Mentor Bot ─────────────────────────────────────────────────────────── */
+.mentor-quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.mentor-chat-window {
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mentor-bubble {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+
+.mentor-bubble-bot {
+  align-self: flex-start;
+  background: rgba(108, 99, 255, 0.12);
+  border-color: rgba(108, 99, 255, 0.25);
+  max-width: 92%;
+}
+
+.mentor-bubble-user {
+  align-self: flex-end;
+  background: rgba(34, 211, 164, 0.1);
+  border-color: rgba(34, 211, 164, 0.25);
+  max-width: 80%;
+}
+
+.mentor-input-row {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .card { padding: 20px; }
   .btn { padding: 10px 22px; font-size: 0.875rem; }
+  .resume-form-grid { grid-template-columns: 1fr; }
+  .mentor-input-row { grid-template-columns: 1fr; }
 }
