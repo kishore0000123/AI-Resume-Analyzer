@@ -1,8 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from services.extractor import extract_text_from_bytes
-from services.analyzer import extract_skills, score_resume, match_jobs, best_role
-from services.ai_helper import get_suggestions, optimize_resume
-from services.db import get_db
+from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db
 import datetime
 
 router = APIRouter()
