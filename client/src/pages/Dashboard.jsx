@@ -3,7 +3,7 @@ import { useState } from "react";
 import ScoreGauge from "../components/ScoreGauge";
 import JobCard from "../components/JobCard";
 import SkillBadge from "../components/SkillBadge";
-import { optimizeResume, suggestImprovements } from "../api/client";
+import { getHistory, optimizeResume, suggestImprovements } from "../api/client";
 
 export default function Dashboard() {
   const { state } = useLocation();
@@ -29,6 +29,9 @@ export default function Dashboard() {
   const [optimizeFallback, setOptimizeFallback] = useState(null); // list when offline
   const [loadingSuggest, setLoadingSuggest] = useState(false);
   const [loadingOptimize, setLoadingOptimize] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyItems, setHistoryItems] = useState([]);
+  const [historyMsg, setHistoryMsg] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
   if (!result) {
@@ -45,6 +48,27 @@ export default function Dashboard() {
   }
 
   const { skills, score, job_matches, filename } = result;
+  const bestRole = result.best_role;
+
+  const handleOpenTab = async (tabId) => {
+    setActiveTab(tabId);
+    if (tabId !== "history" || historyItems.length > 0 || loadingHistory) return;
+
+    setLoadingHistory(true);
+    setHistoryMsg("");
+    try {
+      const { data } = await getHistory(20);
+      setHistoryItems(data.history ?? []);
+      if (data.available === false) {
+        setHistoryMsg(data.message || "History is currently unavailable.");
+      }
+    } catch (e) {
+      const msg = e?.response?.data?.detail || "Failed to load history.";
+      setHistoryMsg(msg);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const handleSuggest = async () => {
     if (!file) return;
@@ -80,6 +104,7 @@ export default function Dashboard() {
     { id: "overview", label: "Overview", icon: "📊" },
     { id: "skills", label: "Skills", icon: "🧠" },
     { id: "jobs", label: "Job Matches", icon: "💼" },
+    { id: "history", label: "History", icon: "🗂️" },
     { id: "suggestions", label: "Suggestions", icon: "💡" },
     { id: "optimized", label: "Optimized", icon: "✨" },
   ];
@@ -135,7 +160,7 @@ export default function Dashboard() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleOpenTab(tab.id)}
               className={`btn ${activeTab === tab.id ? "btn-primary" : "btn-ghost"}`}
               style={{ padding: "8px 18px", fontSize: "0.875rem", whiteSpace: "nowrap" }}
             >
@@ -249,9 +274,54 @@ export default function Dashboard() {
             <div style={{ marginBottom: 20, color: "var(--text-secondary)" }}>
               Top job roles based on your skill set:
             </div>
+            {bestRole && (
+              <div className="card" style={{ marginBottom: 16, background: "rgba(34,211,164,0.08)", borderColor: "rgba(34,211,164,0.22)" }}>
+                <div className="section-title" style={{ marginBottom: 8 }}>🔥 Best Role Suggestion</div>
+                <p style={{ margin: 0, color: "var(--text-primary)" }}>
+                  {bestRole.icon} <strong>{bestRole.role}</strong> ({bestRole.match_percent}%)
+                </p>
+              </div>
+            )}
             <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
               {job_matches.map((job, i) => <JobCard key={job.role} job={job} index={i} />)}
             </div>
+          </div>
+        )}
+
+        {/* ─── HISTORY TAB ─────────────────────────────────── */}
+        {activeTab === "history" && (
+          <div className="card">
+            <div className="section-title">🗂️ Analysis History</div>
+            {loadingHistory ? (
+              <div style={{ padding: "16px 0", color: "var(--text-secondary)" }}>Loading history...</div>
+            ) : historyMsg ? (
+              <div style={{
+                marginTop: 8, padding: "14px 18px",
+                background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)",
+                borderRadius: "var(--radius-md)", color: "var(--warning)", fontSize: "0.9rem",
+              }}>
+                {historyMsg}
+              </div>
+            ) : historyItems.length === 0 ? (
+              <div style={{ padding: "16px 0", color: "var(--text-muted)" }}>No history yet.</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
+                {historyItems.map((item, idx) => (
+                  <div key={`${item.filename}-${idx}`} style={{
+                    padding: "14px 16px", borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border)", background: "var(--bg-surface)",
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                      <strong style={{ color: "var(--text-primary)" }}>{item.filename || "Untitled resume"}</strong>
+                      <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Score: {item?.score?.total ?? "N/A"}</span>
+                    </div>
+                    <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                      Skills: {item.skills?.length ?? 0} · Matches: {item.job_matches?.length ?? 0}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

@@ -241,13 +241,22 @@ def match_jobs(skills: list[str]) -> list[dict]:
         matched = [s for s in required if s in skills_set]
         missing = [s for s in required if s not in skills_set]
         pct = round((len(matched) / len(required)) * 100, 1)
+        status = "strong" if pct >= 70 else ("moderate" if pct >= 40 else "weak")
         results.append({
             "role": role,
             "icon": data["icon"],
             "match_percent": pct,
             "matched_skills": matched,
             "missing_skills": missing,
+            "status": status,
         })
 
     results.sort(key=lambda x: x["match_percent"], reverse=True)
     return results
+
+
+def best_role(matches: list[dict]) -> dict | None:
+    """Return the top-matching role entry if available."""
+    if not matches:
+        return None
+    return matches[0]

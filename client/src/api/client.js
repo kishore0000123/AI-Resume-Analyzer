@@ -30,4 +30,6 @@ export const optimizeResume = (file) => {
   });
 };
 
+export const getHistory = (limit = 20) => API.get(`/history?limit=${limit}`);
+
 export default API;

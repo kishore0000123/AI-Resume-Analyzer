@@ -2,12 +2,17 @@ import { useState } from "react";
 
 export default function JobCard({ job, index }) {
   const [hovered, setHovered] = useState(false);
-  const { role, icon, match_percent, matched_skills, missing_skills } = job;
+  const { role, icon, match_percent, matched_skills, missing_skills, status } = job;
 
   const color =
     match_percent >= 70 ? "var(--success)" :
     match_percent >= 40 ? "var(--warning)" :
     "var(--text-secondary)";
+
+  const statusLabel =
+    status === "strong" ? "Strong match" :
+    status === "moderate" ? "Moderate" :
+    "Weak";
 
   return (
     <div
@@ -25,6 +30,9 @@ export default function JobCard({ job, index }) {
         <div>
           <div style={{ fontSize: "1.5rem", marginBottom: 6 }}>{icon}</div>
           <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)" }}>{role}</h3>
+          <div style={{ marginTop: 4, fontSize: "0.78rem", color }}>
+            {statusLabel}
+          </div>
         </div>
         <div style={{
           fontSize: "1.5rem", fontWeight: 800, color,
