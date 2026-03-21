@@ -19,9 +19,6 @@ export default function Navbar() {
           <Link to="/generate-resume" className={pathname === "/generate-resume" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
             Generate Resume
           </Link>
-          <Link to="/mentor-bot" className={pathname === "/mentor-bot" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
-            Mentor Bot
-          </Link>
         </div>
       </div>
     </nav>
