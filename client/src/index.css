@@ -349,6 +349,132 @@ body {
   font-size: 0.78rem;
 }
 
+/* ─── Floating Bot ──────────────────────────────────────────────────────── */
+.floating-bot-icon {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #f97316;
+  color: #ffffff;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 22px;
+  z-index: 200;
+  box-shadow: 0 10px 24px rgba(249, 115, 22, 0.35);
+}
+
+.floating-bot-popup {
+  position: fixed;
+  bottom: 88px;
+  right: 20px;
+  width: min(340px, calc(100vw - 24px));
+  height: 500px;
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
+  border-radius: 15px;
+  overflow: hidden;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  z-index: 200;
+}
+
+.floating-bot-header {
+  background: #f97316;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+}
+
+.floating-bot-close {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.floating-bot-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.floating-msg {
+  margin: 6px 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  max-width: 75%;
+  word-wrap: break-word;
+}
+
+.floating-msg.bot {
+  background: #1e293b;
+}
+
+.floating-msg.user {
+  background: #f97316;
+  margin-left: auto;
+}
+
+.floating-bot-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px;
+  border-top: 1px solid #1f2937;
+}
+
+.floating-bot-suggestions button {
+  background: transparent;
+  border: 1px solid #f97316;
+  color: #f97316;
+  padding: 5px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.floating-bot-input {
+  display: flex;
+  padding: 10px;
+  gap: 6px;
+  border-top: 1px solid #1f2937;
+}
+
+.floating-bot-input input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 5px;
+  border: none;
+  background: #111827;
+  color: #ffffff;
+}
+
+.floating-bot-input button,
+.floating-action-btn {
+  background: #f97316;
+  border: none;
+  color: #ffffff;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.floating-action-btn {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  padding: 6px 8px;
+}
+
 /* ─── Mentor Bot ─────────────────────────────────────────────────────────── */
 .mentor-quick-chips {
   display: flex;
@@ -403,4 +529,12 @@ body {
   .resume-form-grid { grid-template-columns: 1fr; }
   .mentor-input-row { grid-template-columns: 1fr; }
   .msg { max-width: 85%; }
+  .floating-bot-popup {
+    right: 12px;
+    bottom: 84px;
+  }
+  .floating-bot-icon {
+    right: 12px;
+    bottom: 14px;
+  }
 }
