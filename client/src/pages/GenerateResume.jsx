@@ -107,27 +107,6 @@ export default function GenerateResume() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const applyRoleSuggestions = () => {
-    if (!roleData) return;
-    const mergedSkills = Array.from(new Set([
-      ...form.skills.split(",").map((s) => s.trim()).filter(Boolean),
-      ...roleData.recommended_skills,
-    ])).join(", ");
-
-    const projectBlock = roleData.project_ideas
-      .map((p, i) => `${i + 1}. ${p}`)
-      .join("\n");
-
-    setForm((prev) => ({
-      ...prev,
-      skills: mergedSkills,
-      projects: prev.projects ? `${prev.projects}\n${projectBlock}` : projectBlock,
-      summary:
-        prev.summary ||
-        `Targeting ${roleData.role} roles with focus on ${roleData.ats_keywords.slice(0, 3).join(", ")}.`,
-    }));
-  };
-
   const autofillFromAnalysis = () => {
     if (!analysis) return;
 
@@ -289,15 +268,11 @@ export default function GenerateResume() {
             >
               {roleOptions.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
-            <button className="btn btn-primary" onClick={applyRoleSuggestions} disabled={!roleData || loadingRole}>
-              {loadingRole ? "Loading..." : "Apply To Builder"}
-            </button>
           </div>
 
           {roleData ? (
             <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.7 }}>
               <p><strong style={{ color: "var(--text-primary)" }}>Missing Skills:</strong> {roleData.missing_skills.join(", ") || "None"}</p>
-              <p><strong style={{ color: "var(--text-primary)" }}>ATS Keywords:</strong> {roleData.ats_keywords.join(", ")}</p>
               <p><strong style={{ color: "var(--text-primary)" }}>Project Ideas:</strong></p>
               <ul style={{ paddingLeft: 18 }}>
                 {roleData.project_ideas.map((idea) => <li key={idea}>{idea}</li>)}
