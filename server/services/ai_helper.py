@@ -120,3 +120,91 @@ def optimize_resume(text: str, skills: list = None) -> dict:
     # ── Fallback path (no API key or API error) ──────────────────
     fallback = _get_basic_suggestions(skills or [])
     return {"mode": "offline", "optimized": "", "suggestions": fallback}
+
+
+def _chat_fallback_reply(question: str) -> dict:
+    """Rule-based mentor bot reply for resume Q&A."""
+    q = (question or "").lower().strip()
+
+    if "how to build" in q or "build resume" in q or "start resume" in q:
+        return {
+            "reply": (
+                "1) Add your name and contact details\n"
+                "2) Add a short summary\n"
+                "3) Add technical skills\n"
+                "4) Add 2-3 strong projects\n"
+                "5) Add education and certifications\n"
+                "6) Keep it one page and ATS-friendly."
+            ),
+            "action": "summary",
+            "mode": "offline",
+        }
+
+    if "fresher" in q or "student" in q or "beginner" in q or "no experience" in q:
+        return {
+            "reply": (
+                "Great. As a fresher, focus on projects, skills, and certifications first.\n\n"
+                "Do you want a step-by-step fresher resume flow?"
+            ),
+            "action": None,
+            "mode": "offline",
+        }
+
+    if "yes" in q or "start" in q:
+        return {
+            "reply": (
+                "Awesome. Step 1: Add basic details (name, email, phone).\n"
+                "Step 2: Write a 2-3 line summary.\n"
+                "Step 3: Add skills and 2 projects with outcomes."
+            ),
+            "action": "summary",
+            "mode": "offline",
+        }
+
+    if "project" in q:
+        return {
+            "reply": "Project format: Problem -> Solution -> Tech stack -> Result. Keep 2-4 impact bullets per project.",
+            "action": "projects",
+            "mode": "offline",
+        }
+
+    if "skill" in q or "tech stack" in q:
+        return {
+            "reply": "Group skills by category: Languages, Frameworks, Databases, Tools. Keep only interview-ready skills.",
+            "action": "skills",
+            "mode": "offline",
+        }
+
+    if "ats" in q or "keyword" in q:
+        return {
+            "reply": "ATS tips: use role keywords, clear section headings, no tables/images, and export as PDF.",
+            "action": None,
+            "mode": "offline",
+        }
+
+    return {
+        "reply": "Ask me: How to build resume, Fresher tips, Project section help, or ATS tips.",
+        "action": None,
+        "mode": "offline",
+    }
+
+
+def get_chat_reply(question: str) -> dict:
+    """Return chatbot reply. Uses OpenAI when available, otherwise fallback rules."""
+    fallback = _chat_fallback_reply(question)
+
+    system = (
+        "You are a concise resume mentor bot. Give practical beginner-friendly advice in 2-6 short lines. "
+        "Avoid long paragraphs."
+    )
+    user = f"User question: {question}"
+
+    result = _call_openai(system, user)
+    if result and not result.startswith("ERROR:"):
+        return {
+            "reply": result,
+            "action": fallback.get("action"),
+            "mode": "ai",
+        }
+
+    return fallback

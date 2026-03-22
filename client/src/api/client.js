@@ -32,4 +32,9 @@ export const optimizeResume = (file) => {
 
 export const getHistory = (limit = 20) => API.get(`/history?limit=${limit}`);
 
+export const askBotQuestion = (question) => API.post("/chat", { question });
+
+export const getRoleSuggestions = (role, currentSkills = []) =>
+  API.post("/role-suggestions", { role, current_skills: currentSkills });
+
 export default API;

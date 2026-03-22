@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { askBotQuestion } from "../api/client";
 
 const suggestions = [
   "How to build resume?",
   "Fresher tips",
+  "Frontend Developer role",
+  "Backend Developer role",
+  "Data Scientist role",
   "Project section help",
   "What to write in skills?",
   "ATS tips",
@@ -29,6 +33,30 @@ function getReply(text, stage) {
     return {
       text: "1) Add your name and contact details\n2) Add a short summary\n3) Add technical skills\n4) Add 2-3 strong projects\n5) Add education and certifications\n6) Keep it one page and ATS-friendly.",
       action: "summary",
+      nextStage: null,
+    };
+  }
+
+  if (q.includes("frontend developer") || q.includes("frontend role")) {
+    return {
+      text: "For Frontend Developer roles, prioritize React, JavaScript, TypeScript, HTML/CSS, and responsive UI projects.",
+      action: "role:Frontend Developer",
+      nextStage: null,
+    };
+  }
+
+  if (q.includes("backend developer") || q.includes("backend role")) {
+    return {
+      text: "For Backend Developer roles, prioritize Python/Node, FastAPI/Express, SQL, APIs, and scalable backend projects.",
+      action: "role:Backend Developer",
+      nextStage: null,
+    };
+  }
+
+  if (q.includes("data scientist") || q.includes("data analyst") || q.includes("data role")) {
+    return {
+      text: "For Data roles, show Python, SQL, Pandas, ML basics, and projects with clear metrics and insights.",
+      action: "role:Data Scientist",
       nextStage: null,
     };
   }
@@ -89,6 +117,7 @@ export default function FloatingBot() {
     },
   ]);
   const [input, setInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const chatRef = useRef(null);
   const navigate = useNavigate();
 
@@ -97,21 +126,46 @@ export default function FloatingBot() {
     chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
   }, [messages, open]);
 
-  const sendMessage = (value = null) => {
+  const sendMessage = async (value = null) => {
     const text = (value ?? input).trim();
-    if (!text) return;
+    if (!text || isSending) return;
 
-    const reply = getReply(text, stage);
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", text, action: null },
-      { role: "bot", text: reply.text, action: reply.action },
-    ]);
-    setStage(reply.nextStage);
+    setMessages((prev) => [...prev, { role: "user", text, action: null }]);
     setInput("");
+
+    setIsSending(true);
+    try {
+      const { data } = await askBotQuestion(text);
+      setMessages((prev) => [
+        ...prev,
+        { role: "bot", text: data.reply || "I could not generate a response.", action: data.action || null },
+      ]);
+      if ((text.toLowerCase().includes("fresher") || text.toLowerCase().includes("student") || text.toLowerCase().includes("beginner")) && !data.action) {
+        setStage("fresher");
+      } else if (text.toLowerCase().includes("yes") || text.toLowerCase().includes("start")) {
+        setStage("building");
+      } else {
+        setStage(null);
+      }
+    } catch {
+      const reply = getReply(text, stage);
+      setMessages((prev) => [
+        ...prev,
+        { role: "bot", text: reply.text, action: reply.action },
+      ]);
+      setStage(reply.nextStage);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const openBuilderSection = (section) => {
+    if (section?.startsWith("role:")) {
+      const role = section.replace("role:", "");
+      navigate(`/generate-resume?role=${encodeURIComponent(role)}&section=skills`);
+      setOpen(false);
+      return;
+    }
     navigate(`/generate-resume?section=${section}`);
     setOpen(false);
   };
@@ -163,7 +217,7 @@ export default function FloatingBot() {
                 if (e.key === "Enter") sendMessage();
               }}
             />
-            <button onClick={() => sendMessage()}>➤</button>
+            <button onClick={() => sendMessage()} disabled={isSending}>{isSending ? "..." : "➤"}</button>
           </div>
         </div>
       )}

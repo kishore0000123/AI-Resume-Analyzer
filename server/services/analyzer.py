@@ -260,3 +260,51 @@ def best_role(matches: list[dict]) -> dict | None:
     if not matches:
         return None
     return matches[0]
+
+
+def get_role_suggestions(role: str, current_skills: list[str] | None = None) -> dict:
+    """Return role-specific skills, missing skills, project ideas, and ATS keywords."""
+    current = {s.lower().strip() for s in (current_skills or []) if s and s.strip()}
+
+    if role not in JOB_ROLES:
+        return {
+            "available": False,
+            "message": "Role not found",
+            "role": role,
+            "available_roles": sorted(JOB_ROLES.keys()),
+        }
+
+    required = JOB_ROLES[role]["skills"]
+    matched = [s for s in required if s in current]
+    missing = [s for s in required if s not in current]
+
+    project_templates = {
+        "Frontend Developer": [
+            "Build a responsive dashboard with React and Tailwind including charts and filters.",
+            "Create a role-based auth UI with React Router and protected routes.",
+        ],
+        "Backend Developer": [
+            "Design a FastAPI service with JWT auth, pagination, and role-based permissions.",
+            "Build a REST API with caching and database indexing for performance.",
+        ],
+        "Data Scientist": [
+            "Train and evaluate a prediction model with feature engineering and validation metrics.",
+            "Build an end-to-end notebook that cleans data, visualizes patterns, and explains outcomes.",
+        ],
+    }
+
+    projects = project_templates.get(role, [
+        f"Build a portfolio project aligned to {role} responsibilities using {', '.join(required[:3])}.",
+        f"Create a practical case study showing measurable outcomes for a {role} scenario.",
+    ])
+
+    return {
+        "available": True,
+        "role": role,
+        "icon": JOB_ROLES[role]["icon"],
+        "recommended_skills": required,
+        "matched_skills": matched,
+        "missing_skills": missing,
+        "ats_keywords": required[:8],
+        "project_ideas": projects,
+    }

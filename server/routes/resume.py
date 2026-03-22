@@ -1,8 +1,18 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db
+from pydantic import BaseModel
+from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db, get_chat_reply, get_role_suggestions
 import datetime
 
 router = APIRouter()
+
+
+class ChatRequest(BaseModel):
+    question: str
+
+
+class RoleSuggestionRequest(BaseModel):
+    role: str
+    current_skills: list[str] = []
 
 
 @router.get("/")
@@ -136,3 +146,34 @@ def get_history(limit: int = 20):
         return {"history": items, "available": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch history: {e}")
+
+
+@router.post("/chat")
+def chat_with_bot(payload: ChatRequest):
+    """Mentor bot endpoint for frontend chat UI."""
+    question = (payload.question or "").strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is required")
+
+    try:
+        return get_chat_reply(question)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate bot reply: {e}")
+
+
+@router.post("/role-suggestions")
+def role_suggestions(payload: RoleSuggestionRequest):
+    """Return role-based skills, keywords, and project ideas."""
+    role = (payload.role or "").strip()
+    if not role:
+        raise HTTPException(status_code=400, detail="Role is required")
+
+    try:
+        result = get_role_suggestions(role, payload.current_skills)
+        if not result.get("available"):
+            raise HTTPException(status_code=404, detail=result.get("message", "Role not found"))
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate role suggestions: {e}")

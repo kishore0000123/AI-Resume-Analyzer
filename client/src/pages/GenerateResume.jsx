@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { jsPDF } from "jspdf";
 import { useSearchParams } from "react-router-dom";
+import { getRoleSuggestions } from "../api/client";
 
 const templateOptions = [
   { id: "minimal", label: "Minimal" },
@@ -35,6 +36,9 @@ function getAnalysisDraft() {
 export default function GenerateResume() {
   const [searchParams] = useSearchParams();
   const [selectedTemplate, setSelectedTemplate] = useState("minimal");
+  const [selectedRole, setSelectedRole] = useState("Frontend Developer");
+  const [roleData, setRoleData] = useState(null);
+  const [loadingRole, setLoadingRole] = useState(false);
   const summaryRef = useRef(null);
   const skillsRef = useRef(null);
   const projectsRef = useRef(null);
@@ -54,6 +58,8 @@ export default function GenerateResume() {
 
   const analysis = useMemo(() => getAnalysisDraft(), []);
 
+  const roleOptions = ["Frontend Developer", "Backend Developer", "Data Scientist"];
+
   useEffect(() => {
     const section = searchParams.get("section");
     const refMap = {
@@ -70,8 +76,56 @@ export default function GenerateResume() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    const roleParam = searchParams.get("role");
+    if (roleParam) {
+      setSelectedRole(roleParam);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      setLoadingRole(true);
+      try {
+        const currentSkills = form.skills
+          .split(",")
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean);
+        const { data } = await getRoleSuggestions(selectedRole, currentSkills);
+        setRoleData(data);
+      } catch {
+        setRoleData(null);
+      } finally {
+        setLoadingRole(false);
+      }
+    };
+
+    fetchRole();
+  }, [selectedRole]);
+
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const applyRoleSuggestions = () => {
+    if (!roleData) return;
+    const mergedSkills = Array.from(new Set([
+      ...form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+      ...roleData.recommended_skills,
+    ])).join(", ");
+
+    const projectBlock = roleData.project_ideas
+      .map((p, i) => `${i + 1}. ${p}`)
+      .join("\n");
+
+    setForm((prev) => ({
+      ...prev,
+      skills: mergedSkills,
+      projects: prev.projects ? `${prev.projects}\n${projectBlock}` : projectBlock,
+      summary:
+        prev.summary ||
+        `Targeting ${roleData.role} roles with focus on ${roleData.ats_keywords.slice(0, 3).join(", ")}.`,
+    }));
   };
 
   const autofillFromAnalysis = () => {
@@ -222,6 +276,36 @@ export default function GenerateResume() {
             <button className="btn btn-ghost" onClick={autofillFromAnalysis}>✨ Autofill From Analyzer</button>
             <button className="btn btn-success" onClick={downloadResume}>📥 Download My Resume (PDF)</button>
           </div>
+        </div>
+
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="section-title">🎯 Role-Based Suggestions</div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+            <select
+              className="resume-input"
+              style={{ maxWidth: 260 }}
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+            >
+              {roleOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <button className="btn btn-primary" onClick={applyRoleSuggestions} disabled={!roleData || loadingRole}>
+              {loadingRole ? "Loading..." : "Apply To Builder"}
+            </button>
+          </div>
+
+          {roleData ? (
+            <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.7 }}>
+              <p><strong style={{ color: "var(--text-primary)" }}>Missing Skills:</strong> {roleData.missing_skills.join(", ") || "None"}</p>
+              <p><strong style={{ color: "var(--text-primary)" }}>ATS Keywords:</strong> {roleData.ats_keywords.join(", ")}</p>
+              <p><strong style={{ color: "var(--text-primary)" }}>Project Ideas:</strong></p>
+              <ul style={{ paddingLeft: 18 }}>
+                {roleData.project_ideas.map((idea) => <li key={idea}>{idea}</li>)}
+              </ul>
+            </div>
+          ) : (
+            <p style={{ color: "var(--text-muted)" }}>Role suggestions unavailable.</p>
+          )}
         </div>
 
         <div className="card" style={{ marginBottom: 20 }}>
