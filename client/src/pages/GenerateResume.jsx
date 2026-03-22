@@ -259,7 +259,21 @@ export default function GenerateResume() {
                 fontSize: "0.9rem",
               }}
             >
+<<<<<<< HEAD
               {feedback.text}
+=======
+              {roleOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+
+          {roleData ? (
+            <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.7 }}>
+              <p><strong style={{ color: "var(--text-primary)" }}>Missing Skills:</strong> {roleData.missing_skills.join(", ") || "None"}</p>
+              <p><strong style={{ color: "var(--text-primary)" }}>Project Ideas:</strong></p>
+              <ul style={{ paddingLeft: 18 }}>
+                {roleData.project_ideas.map((idea) => <li key={idea}>{idea}</li>)}
+              </ul>
+>>>>>>> 058e92b (Clean bot legacy logic and simplify role suggestions UI)
             </div>
           )}
         </div>
