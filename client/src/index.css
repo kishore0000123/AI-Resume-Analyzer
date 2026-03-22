@@ -409,6 +409,7 @@ body {
 }
 
 .floating-msg {
+  display: inline-block;
   margin: 6px 0;
   padding: 8px 12px;
   border-radius: 10px;
