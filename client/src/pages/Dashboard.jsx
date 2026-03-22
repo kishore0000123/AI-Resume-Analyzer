@@ -330,7 +330,7 @@ export default function Dashboard() {
           <div className="card">
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
               <div className="section-title" style={{ margin: 0 }}>💡 AI Improvement Suggestions</div>
-              {suggestMode && (
+              {suggestMode === "ai" && (
                 <span style={{
                   fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
                   padding: "3px 10px", borderRadius: 99,
@@ -338,7 +338,7 @@ export default function Dashboard() {
                   color: suggestMode === "ai" ? "var(--success)" : "var(--warning)",
                   border: `1px solid ${suggestMode === "ai" ? "rgba(34,211,164,0.3)" : "rgba(245,158,11,0.3)"}`,
                 }}>
-                  {suggestMode === "ai" ? "✨ AI Mode" : "⚡ Offline Mode"}
+                  ✨ AI Mode
                 </span>
               )}
             </div>
@@ -379,7 +379,7 @@ export default function Dashboard() {
           <div className="card">
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
               <div className="section-title" style={{ margin: 0 }}>✨ AI-Optimized Resume</div>
-              {optimizeMode && (
+              {optimizeMode === "ai" && (
                 <span style={{
                   fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
                   padding: "3px 10px", borderRadius: 99,
@@ -387,7 +387,7 @@ export default function Dashboard() {
                   color: optimizeMode === "ai" ? "var(--success)" : "var(--warning)",
                   border: `1px solid ${optimizeMode === "ai" ? "rgba(34,211,164,0.3)" : "rgba(245,158,11,0.3)"}`,
                 }}>
-                  {optimizeMode === "ai" ? "✨ AI Mode" : "⚡ Offline Mode"}
+                  ✨ AI Mode
                 </span>
               )}
             </div>
@@ -431,14 +431,6 @@ export default function Dashboard() {
             /* Offline mode — show actionable tips */
             ) : optimizeFallback && optimizeFallback.length > 0 ? (
               <div>
-                <div style={{
-                  padding: "12px 16px", borderRadius: "var(--radius-sm)",
-                  background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.2)",
-                  fontSize: "0.85rem", color: "var(--warning)", marginBottom: 20,
-                }}>
-                  ⚡ OpenAI quota exceeded — showing rule-based optimization tips instead.
-                  Add billing at platform.openai.com to get a full AI-rewritten resume.
-                </div>
                 <ol style={{ display: "flex", flexDirection: "column", gap: 14, listStyle: "none" }}>
                   {optimizeFallback.map((tip, i) => (
                     <li key={i} style={{
