@@ -72,7 +72,7 @@ function getReply(text, stage) {
   }
 
   return {
-    text: "Nice question. Try: How to build resume?, Fresher tips, Project section help, or ATS tips.",
+    text: "Hi! I'm your Resume AI assistant. I can help you build a strong resume. What would you like to start with?",
     action: null,
     nextStage: null,
   };
