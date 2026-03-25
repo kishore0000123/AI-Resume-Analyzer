@@ -93,6 +93,11 @@ export default function GenerateResume() {
     };
   }, [form]);
 
+  const hasRequiredMissing = useMemo(
+    () => requiredFields.some((field) => Boolean(fieldErrors[field])),
+    [fieldErrors]
+  );
+
   useEffect(() => {
     const draftFromNav = location.state?.draft;
     const savedDraft = getSavedBuilderDraft();
@@ -148,6 +153,12 @@ export default function GenerateResume() {
     fetchRole();
   }, [selectedRole, form.skills]);
 
+  useEffect(() => {
+    if (submitAttempted && hasRequiredMissing) {
+      setSuggestionsOpen(true);
+    }
+  }, [submitAttempted, hasRequiredMissing]);
+
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -157,17 +168,6 @@ export default function GenerateResume() {
   };
 
   const showFieldError = (field) => Boolean((touched[field] || submitAttempted) && fieldErrors[field]);
-
-  const hasRequiredMissing = useMemo(
-    () => requiredFields.some((field) => Boolean(fieldErrors[field])),
-    [requiredFields, fieldErrors]
-  );
-
-  useEffect(() => {
-    if (submitAttempted && hasRequiredMissing) {
-      setSuggestionsOpen(true);
-    }
-  }, [submitAttempted, hasRequiredMissing]);
 
   const validateForm = () => {
     setSubmitAttempted(true);
@@ -302,49 +302,51 @@ export default function GenerateResume() {
         </div>
 
         <div className="card section-fade section-fade-4" style={{ marginBottom: 0 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div className="section-title">🎯 Role Suggestions</div>
             <button className="btn btn-ghost" onClick={() => setSuggestionsOpen((v) => !v)}>
               {suggestionsOpen ? "Hide Suggestions" : "Show Suggestions"}
             </button>
-            </div>
-            <div className={`suggestions-collapse ${suggestionsOpen ? "open" : ""}`}>
-              <div className="suggestions-collapse-inner">
-            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
-              <select
-                className="resume-input"
-                style={{ maxWidth: 260 }}
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-              >
-                {roleOptions.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
+          </div>
 
-            {loadingRole ? (
-              <p style={{ color: "var(--text-muted)" }}>Loading suggestions...</p>
-            ) : roleData ? (
-              <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.7 }}>
-                <p><strong style={{ color: "var(--text-primary)" }}>Missing Skills:</strong> {roleData.missing_skills.join(", ") || "None"}</p>
-                <p><strong style={{ color: "var(--text-primary)" }}>Project Ideas:</strong></p>
-                <ul style={{ paddingLeft: 18 }}>
-                  {roleData.project_ideas.map((idea) => <li key={idea}>{idea}</li>)}
-                </ul>
+          <div className={`suggestions-collapse ${suggestionsOpen ? "open" : ""}`}>
+            <div className="suggestions-collapse-inner">
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+                <select
+                  className="resume-input"
+                  style={{ maxWidth: 260 }}
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                >
+                  {roleOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
               </div>
-            ) : (
-              <p style={{ color: "var(--text-muted)" }}>Role suggestions unavailable.</p>
-            )}
 
-            <div className="resume-side-note">
-              <strong>Tip:</strong> Keep summary and skills role-specific. Use measurable outcomes in projects.
-            </div>
+              {loadingRole ? (
+                <p style={{ color: "var(--text-muted)" }}>Loading suggestions...</p>
+              ) : roleData ? (
+                <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.7 }}>
+                  <p><strong style={{ color: "var(--text-primary)" }}>Missing Skills:</strong> {roleData.missing_skills.join(", ") || "None"}</p>
+                  <p><strong style={{ color: "var(--text-primary)" }}>Project Ideas:</strong></p>
+                  <ul style={{ paddingLeft: 18 }}>
+                    {roleData.project_ideas.map((idea) => <li key={idea}>{idea}</li>)}
+                  </ul>
+                </div>
+              ) : (
+                <p style={{ color: "var(--text-muted)" }}>Role suggestions unavailable.</p>
+              )}
+
+              <div className="resume-side-note">
+                <strong>Tip:</strong> Keep summary and skills role-specific. Use measurable outcomes in projects.
               </div>
             </div>
-            {!suggestionsOpen && (
-              <p style={{ color: "var(--text-secondary)", marginTop: 2 }}>
-                Suggestions are available when you need missing skills and project ideas.
-              </p>
-            )}
+          </div>
+
+          {!suggestionsOpen && (
+            <p style={{ color: "var(--text-secondary)", marginTop: 2 }}>
+              Suggestions are available when you need missing skills and project ideas.
+            </p>
+          )}
         </div>
       </div>
     </main>
