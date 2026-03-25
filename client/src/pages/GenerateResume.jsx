@@ -1,13 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { jsPDF } from "jspdf";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { getRoleSuggestions } from "../api/client";
-
-const templateOptions = [
-  { id: "minimal", label: "Minimal" },
-  { id: "modern", label: "Modern" },
-  { id: "developer", label: "Developer Style" },
-];
+import StepIndicator from "../components/StepIndicator";
+import ResumeForm from "../components/ResumeForm";
+import ResumePreview from "../components/ResumePreview";
 
 function parseNameFromText(text) {
   if (!text) return "";
@@ -33,17 +29,34 @@ function getAnalysisDraft() {
   }
 }
 
+function getSavedBuilderDraft() {
+  try {
+    const raw = sessionStorage.getItem("resume_builder_draft");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+const templateOptions = [
+  { id: "minimal", label: "Minimal" },
+  { id: "modern", label: "Modern" },
+  { id: "developer", label: "Developer Style" },
+];
+
 export default function GenerateResume() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [selectedTemplate, setSelectedTemplate] = useState("minimal");
   const [selectedRole, setSelectedRole] = useState("Frontend Developer");
   const [roleData, setRoleData] = useState(null);
   const [loadingRole, setLoadingRole] = useState(false);
-  const summaryRef = useRef(null);
-  const skillsRef = useRef(null);
-  const projectsRef = useRef(null);
-  const experienceRef = useRef(null);
-  const educationRef = useRef(null);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "", text: "" });
+  const [touched, setTouched] = useState({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -56,9 +69,43 @@ export default function GenerateResume() {
     education: "",
   });
 
-  const analysis = useMemo(() => getAnalysisDraft(), []);
+  const summaryRef = useRef(null);
+  const skillsRef = useRef(null);
+  const projectsRef = useRef(null);
+  const experienceRef = useRef(null);
+  const educationRef = useRef(null);
 
+  const analysis = useMemo(() => getAnalysisDraft(), []);
   const roleOptions = ["Frontend Developer", "Backend Developer", "Data Scientist"];
+  const requiredFields = ["name", "email", "skills", "summary"];
+  const hasAnyContent = useMemo(() => Object.values(form).some((v) => v.trim()), [form]);
+
+  const fieldErrors = useMemo(() => {
+    return {
+      name: !form.name.trim() ? "Name is required" : "",
+      email: !form.email.trim()
+        ? "Email is required"
+        : !/^\S+@\S+\.\S+$/.test(form.email.trim())
+          ? "Enter a valid email"
+          : "",
+      skills: !form.skills.trim() ? "Skills are required" : "",
+      summary: !form.summary.trim() ? "Summary is required" : "",
+    };
+  }, [form]);
+
+  useEffect(() => {
+    const draftFromNav = location.state?.draft;
+    const savedDraft = getSavedBuilderDraft();
+    const initial = draftFromNav || savedDraft;
+    if (initial?.form) {
+      setForm((prev) => ({ ...prev, ...initial.form }));
+      if (initial.selectedTemplate) setSelectedTemplate(initial.selectedTemplate);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    sessionStorage.setItem("resume_builder_draft", JSON.stringify({ form, selectedTemplate }));
+  }, [form, selectedTemplate]);
 
   useEffect(() => {
     const section = searchParams.get("section");
@@ -78,9 +125,7 @@ export default function GenerateResume() {
 
   useEffect(() => {
     const roleParam = searchParams.get("role");
-    if (roleParam) {
-      setSelectedRole(roleParam);
-    }
+    if (roleParam) setSelectedRole(roleParam);
   }, [searchParams]);
 
   useEffect(() => {
@@ -101,14 +146,46 @@ export default function GenerateResume() {
     };
 
     fetchRole();
-  }, [selectedRole]);
+  }, [selectedRole, form.skills]);
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const showFieldError = (field) => Boolean((touched[field] || submitAttempted) && fieldErrors[field]);
+
+  const hasRequiredMissing = useMemo(
+    () => requiredFields.some((field) => Boolean(fieldErrors[field])),
+    [requiredFields, fieldErrors]
+  );
+
+  useEffect(() => {
+    if (submitAttempted && hasRequiredMissing) {
+      setSuggestionsOpen(true);
+    }
+  }, [submitAttempted, hasRequiredMissing]);
+
+  const validateForm = () => {
+    setSubmitAttempted(true);
+    const invalid = requiredFields.filter((field) => fieldErrors[field]);
+    if (invalid.length > 0) {
+      setTouched((prev) => ({
+        ...prev,
+        ...Object.fromEntries(requiredFields.map((f) => [f, true])),
+      }));
+    }
+    return invalid;
+  };
+
   const autofillFromAnalysis = () => {
-    if (!analysis) return;
+    if (!analysis) {
+      setFeedback({ type: "error", text: "No analysis found. Analyze a resume first." });
+      return;
+    }
 
     const skills = (analysis.skills || []).join(", ");
     const strengths = analysis.score?.strengths?.slice(0, 2).join(" ") || "";
@@ -132,110 +209,36 @@ export default function GenerateResume() {
       summary: prev.summary || summary,
       projects: prev.projects || projectLines,
     }));
+
+    setFeedback({ type: "success", text: "Autofill complete. Review fields and continue." });
   };
 
-  const generateResumeText = () => {
-    return [
-      form.name,
-      [form.email, form.phone, form.location].filter(Boolean).join(" | "),
-      "",
-      "PROFESSIONAL SUMMARY",
-      form.summary,
-      "",
-      "SKILLS",
-      form.skills,
-      "",
-      "PROJECTS",
-      form.projects,
-      "",
-      "EXPERIENCE",
-      form.experience,
-      "",
-      "EDUCATION",
-      form.education,
-    ]
-      .filter((line) => line !== undefined)
-      .join("\n");
-  };
-
-  const writeMultiline = (doc, text, x, y, maxWidth, lineHeight = 6) => {
-    const lines = doc.splitTextToSize(text || "", maxWidth);
-    doc.text(lines, x, y);
-    return y + lines.length * lineHeight;
-  };
-
-  const buildPdf = (template = selectedTemplate, starterText = null, starterName = "resume") => {
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 14;
-
-    const sourceText = starterText || generateResumeText();
-
-    if (template === "modern") {
-      doc.setFillColor(18, 26, 45);
-      doc.rect(0, 0, pageWidth, 34, "F");
-      doc.setTextColor(240, 242, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(19);
-      doc.text(form.name || "Your Name", margin, 18);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text([form.email, form.phone, form.location].filter(Boolean).join(" | "), margin, 25);
-      doc.setTextColor(20, 20, 20);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(11);
-      writeMultiline(doc, sourceText, margin, 42, pageWidth - margin * 2, 5.5);
-    } else if (template === "developer") {
-      doc.setFillColor(10, 14, 24);
-      doc.rect(0, 0, pageWidth, 297, "F");
-      doc.setTextColor(34, 211, 164);
-      doc.setFont("courier", "bold");
-      doc.setFontSize(18);
-      doc.text(form.name || "Your Name", margin, 18);
-      doc.setTextColor(240, 242, 255);
-      doc.setFont("courier", "normal");
-      doc.setFontSize(10);
-      doc.text([form.email, form.phone, form.location].filter(Boolean).join(" | "), margin, 24);
-      doc.setFontSize(10.5);
-      writeMultiline(doc, sourceText, margin, 34, pageWidth - margin * 2, 5.5);
-    } else {
-      doc.setTextColor(20, 20, 20);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(20);
-      doc.text(form.name || "Your Name", margin, 20);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text([form.email, form.phone, form.location].filter(Boolean).join(" | "), margin, 27);
-      doc.setFontSize(11);
-      writeMultiline(doc, sourceText, margin, 38, pageWidth - margin * 2, 5.7);
+  const goToPreview = () => {
+    const invalid = validateForm();
+    if (invalid.length > 0) {
+      setFeedback({ type: "error", text: "Please fix highlighted required fields before preview." });
+      return;
     }
 
-    doc.save(`${starterName}.pdf`);
-  };
-
-  const downloadResume = () => {
-    buildPdf(selectedTemplate, null, "generated_resume");
-  };
-
-  const downloadStarterTemplate = (kind) => {
-    const starterTemplates = {
-      fresher: `Fresher Candidate\nexample@email.com | +91 90000 00000 | City\n\nPROFESSIONAL SUMMARY\nEntry-level candidate with strong fundamentals in software development and eagerness to learn.\n\nSKILLS\nJava, Python, SQL, Git, HTML, CSS\n\nPROJECTS\nBuilt a student management web app using React and Node.js.\nCreated a data dashboard using Python and Pandas.\n\nEDUCATION\nB.Tech in Computer Science, 2026`,
-      developer: `Developer Candidate\nexample@email.com | +91 90000 00000 | City\n\nPROFESSIONAL SUMMARY\nFull Stack Developer with experience in shipping scalable web features and API integrations.\n\nSKILLS\nReact, Node.js, FastAPI, MongoDB, Docker, AWS\n\nEXPERIENCE\nDeveloped and maintained production-ready modules for internal tools.\nImproved API response time by 30% through query optimization.\n\nPROJECTS\nBuilt AI Resume Analyzer with scoring, job-match insights, and optimization support.`,
-      internship: `Internship Candidate\nexample@email.com | +91 90000 00000 | City\n\nPROFESSIONAL SUMMARY\nMotivated student seeking software internship with a focus on web development and AI tools.\n\nSKILLS\nJavaScript, React, Python, FastAPI, GitHub\n\nPROJECTS\nBuilt an internship tracker app with role filters and reminders.\nCreated a resume analysis tool with skill extraction and ATS scoring.\n\nEDUCATION\nB.Sc Computer Science, 2027`,
-      student: `Student Beginner\nexample@email.com | +91 90000 00000 | City\n\nPROFESSIONAL SUMMARY\nBeginner student building strong software engineering fundamentals with academic and self-driven projects.\n\nSKILLS\nC, Python, HTML, CSS, JavaScript, Git\n\nACADEMIC PROJECTS\nDesigned a student attendance tracker with basic analytics dashboard.\nBuilt a mini web app for task reminders using React and local storage.\n\nCERTIFICATIONS\nCompleted foundational courses in Web Development and Python Programming.\n\nEDUCATION\nB.Tech / B.Sc (Current), Expected Graduation: 2027`,
-    };
-
-    buildPdf("minimal", starterTemplates[kind], `${kind}_starter_resume`);
+    setFeedback({ type: "", text: "" });
+    navigate("/preview", {
+      state: {
+        draft: {
+          form,
+          selectedTemplate,
+        },
+      },
+    });
   };
 
   return (
     <main style={{ padding: "40px 0 80px" }}>
-      <div className="container" style={{ maxWidth: 1000 }}>
-        <div className="card" style={{ marginBottom: 20 }}>
-          <div className="section-title">🛠️ Resume Builder + PDF Download</div>
+      <div className="container" style={{ maxWidth: 1240 }}>
+        <div className="card section-fade section-fade-1" style={{ marginBottom: 20 }}>
+          <div className="section-title">🧾 Resume Generator</div>
+          <StepIndicator currentStep={hasAnyContent ? 2 : 1} steps={["Fill Details", "Live Preview", "Download"]} />
           <p style={{ color: "var(--text-secondary)", marginBottom: 18 }}>
-            Build a clean resume from form inputs, pick a template, and download as PDF.
+            Fill the form, then click Generate Resume to open preview and download options.
           </p>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
@@ -251,65 +254,97 @@ export default function GenerateResume() {
             ))}
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div className="builder-actions">
             <button className="btn btn-ghost" onClick={autofillFromAnalysis}>✨ Autofill From Analyzer</button>
-            <button className="btn btn-success" onClick={downloadResume}>📥 Download My Resume (PDF)</button>
+            <button className="btn btn-primary" onClick={goToPreview}>🚀 Generate Resume</button>
           </div>
-        </div>
 
-        <div className="card" style={{ marginBottom: 20 }}>
-          <div className="section-title">🎯 Role-Based Suggestions</div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
-            <select
-              className="resume-input"
-              style={{ maxWidth: 260 }}
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
+          {feedback.text && (
+            <div
+              style={{
+                marginTop: 14,
+                padding: "10px 12px",
+                borderRadius: "var(--radius-sm)",
+                border: `1px solid ${feedback.type === "error" ? "rgba(244,63,94,0.35)" : "rgba(34,211,164,0.35)"}`,
+                background: feedback.type === "error" ? "rgba(244,63,94,0.1)" : "rgba(34,211,164,0.1)",
+                color: feedback.type === "error" ? "var(--danger)" : "var(--success)",
+                fontSize: "0.9rem",
+              }}
             >
-              {roleOptions.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-
-          {roleData ? (
-            <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.7 }}>
-              <p><strong style={{ color: "var(--text-primary)" }}>Missing Skills:</strong> {roleData.missing_skills.join(", ") || "None"}</p>
-              <p><strong style={{ color: "var(--text-primary)" }}>Project Ideas:</strong></p>
-              <ul style={{ paddingLeft: 18 }}>
-                {roleData.project_ideas.map((idea) => <li key={idea}>{idea}</li>)}
-              </ul>
+              {feedback.text}
             </div>
-          ) : (
-            <p style={{ color: "var(--text-muted)" }}>Role suggestions unavailable.</p>
           )}
         </div>
 
-        <div className="card" style={{ marginBottom: 20 }}>
-          <div className="section-title">🧾 Resume Details</div>
-          <div className="resume-form-grid">
-            <input className="resume-input" placeholder="Full Name" value={form.name} onChange={(e) => updateField("name", e.target.value)} />
-            <input className="resume-input" placeholder="Email" value={form.email} onChange={(e) => updateField("email", e.target.value)} />
-            <input className="resume-input" placeholder="Phone" value={form.phone} onChange={(e) => updateField("phone", e.target.value)} />
-            <input className="resume-input" placeholder="Location" value={form.location} onChange={(e) => updateField("location", e.target.value)} />
+        <div className="generate-layout">
+          <div className="card section-fade section-fade-2" style={{ marginBottom: 20 }}>
+            <div className="section-title">✍️ Resume Form</div>
+            <ResumeForm
+              form={form}
+              updateField={updateField}
+              handleBlur={handleBlur}
+              showFieldError={showFieldError}
+              fieldErrors={fieldErrors}
+              refs={{ summaryRef, skillsRef, projectsRef, experienceRef, educationRef }}
+            />
           </div>
 
-          <textarea ref={summaryRef} className="resume-textarea" placeholder="Professional Summary" value={form.summary} onChange={(e) => updateField("summary", e.target.value)} />
-          <textarea ref={skillsRef} className="resume-textarea" placeholder="Skills (comma separated)" value={form.skills} onChange={(e) => updateField("skills", e.target.value)} />
-          <textarea ref={projectsRef} className="resume-textarea" placeholder="Projects" value={form.projects} onChange={(e) => updateField("projects", e.target.value)} />
-          <textarea ref={experienceRef} className="resume-textarea" placeholder="Experience" value={form.experience} onChange={(e) => updateField("experience", e.target.value)} />
-          <textarea ref={educationRef} className="resume-textarea" placeholder="Education" value={form.education} onChange={(e) => updateField("education", e.target.value)} />
+          <div className="preview-sticky">
+            <div className="card section-fade section-fade-3" style={{ marginBottom: 20 }}>
+              <div className="section-title">👀 Live Preview</div>
+              {hasAnyContent ? (
+                <ResumePreview form={form} selectedTemplate={selectedTemplate} previewId="generate-live-preview" />
+              ) : (
+                <p style={{ color: "var(--text-muted)" }}>Start typing in the form to see live preview.</p>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="card">
-          <div className="section-title">📦 Starter Template Downloads</div>
-          <p style={{ color: "var(--text-secondary)", marginBottom: 14 }}>
-            Quick download options for common use-cases.
-          </p>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button className="btn btn-ghost" onClick={() => downloadStarterTemplate("fresher")}>Fresher Resume</button>
-            <button className="btn btn-ghost" onClick={() => downloadStarterTemplate("developer")}>Developer Resume</button>
-            <button className="btn btn-ghost" onClick={() => downloadStarterTemplate("internship")}>Internship Resume</button>
-            <button className="btn btn-ghost" onClick={() => downloadStarterTemplate("student")}>Student Beginner Resume</button>
-          </div>
+        <div className="card section-fade section-fade-4" style={{ marginBottom: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div className="section-title">🎯 Role Suggestions</div>
+            <button className="btn btn-ghost" onClick={() => setSuggestionsOpen((v) => !v)}>
+              {suggestionsOpen ? "Hide Suggestions" : "Show Suggestions"}
+            </button>
+            </div>
+            <div className={`suggestions-collapse ${suggestionsOpen ? "open" : ""}`}>
+              <div className="suggestions-collapse-inner">
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+              <select
+                className="resume-input"
+                style={{ maxWidth: 260 }}
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+              >
+                {roleOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+
+            {loadingRole ? (
+              <p style={{ color: "var(--text-muted)" }}>Loading suggestions...</p>
+            ) : roleData ? (
+              <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.7 }}>
+                <p><strong style={{ color: "var(--text-primary)" }}>Missing Skills:</strong> {roleData.missing_skills.join(", ") || "None"}</p>
+                <p><strong style={{ color: "var(--text-primary)" }}>Project Ideas:</strong></p>
+                <ul style={{ paddingLeft: 18 }}>
+                  {roleData.project_ideas.map((idea) => <li key={idea}>{idea}</li>)}
+                </ul>
+              </div>
+            ) : (
+              <p style={{ color: "var(--text-muted)" }}>Role suggestions unavailable.</p>
+            )}
+
+            <div className="resume-side-note">
+              <strong>Tip:</strong> Keep summary and skills role-specific. Use measurable outcomes in projects.
+            </div>
+              </div>
+            </div>
+            {!suggestionsOpen && (
+              <p style={{ color: "var(--text-secondary)", marginTop: 2 }}>
+                Suggestions are available when you need missing skills and project ideas.
+              </p>
+            )}
         </div>
       </div>
     </main>

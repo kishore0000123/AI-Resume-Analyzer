@@ -135,6 +135,13 @@ export default function Dashboard() {
               </span>
             )}
             <button
+              className="btn btn-primary"
+              onClick={() => navigate("/generate")}
+              title="Open Resume Builder"
+            >
+              🛠 Generate Resume
+            </button>
+            <button
               id="suggest-btn"
               className="btn btn-ghost"
               onClick={handleSuggest}

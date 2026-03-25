@@ -5,7 +5,7 @@ export default function MentorBot() {
   const navigate = useNavigate();
 
   const openBuilderSection = (section) => {
-    navigate(`/generate-resume?section=${section}`);
+    navigate(`/generate?section=${section}`);
   };
 
   return (

@@ -16,7 +16,7 @@ export default function Navbar() {
           <Link to="/dashboard" className={pathname === "/dashboard" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
             Dashboard
           </Link>
-          <Link to="/generate-resume" className={pathname === "/generate-resume" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
+          <Link to="/generate" className={pathname === "/generate" || pathname === "/generate-resume" || pathname === "/preview" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
             Generate Resume
           </Link>
         </div>

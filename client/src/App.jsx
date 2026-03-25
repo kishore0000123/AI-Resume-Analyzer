@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import GenerateResume from "./pages/GenerateResume";
+import PreviewResume from "./pages/PreviewResume";
 import FloatingBot from "./components/FloatingBot";
 
 export default function App() {
@@ -20,6 +21,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/generate" element={<GenerateResume />} />
+          <Route path="/preview" element={<PreviewResume />} />
           <Route path="/generate-resume" element={<GenerateResume />} />
         </Routes>
         <FloatingBot />

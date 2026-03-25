@@ -93,11 +93,11 @@ export default function FloatingBot() {
   const openBuilderSection = (section) => {
     if (section?.startsWith("role:")) {
       const role = section.replace("role:", "");
-      navigate(`/generate-resume?role=${encodeURIComponent(role)}&section=skills`);
+      navigate(`/generate?role=${encodeURIComponent(role)}&section=skills`);
       setOpen(false);
       return;
     }
-    navigate(`/generate-resume?section=${section}`);
+    navigate(`/generate?section=${section}`);
     setOpen(false);
   };
 
