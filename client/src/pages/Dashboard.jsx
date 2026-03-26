@@ -3,7 +3,7 @@ import { useState } from "react";
 import ScoreGauge from "../components/ScoreGauge";
 import JobCard from "../components/JobCard";
 import SkillBadge from "../components/SkillBadge";
-import { getHistory, optimizeResume, suggestImprovements } from "../api/client";
+import { getHistory, optimizeResume, suggestImprovements, jdMatch, generateInterviewQuestions } from "../api/client";
 
 export default function Dashboard() {
   const { state } = useLocation();
@@ -33,6 +33,15 @@ export default function Dashboard() {
   const [historyItems, setHistoryItems] = useState([]);
   const [historyMsg, setHistoryMsg] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
+
+  // JD Match state
+  const [jdText, setJdText] = useState("");
+  const [jdResult, setJdResult] = useState(null);
+  const [loadingJd, setLoadingJd] = useState(false);
+
+  // Interview Questions state
+  const [interviewData, setInterviewData] = useState(null);
+  const [loadingInterview, setLoadingInterview] = useState(false);
 
   if (!result) {
     return (
@@ -100,10 +109,40 @@ export default function Dashboard() {
     finally { setLoadingOptimize(false); }
   };
 
+  const handleJdMatch = async () => {
+    if (!file || !jdText.trim()) return;
+    setLoadingJd(true);
+    setJdResult(null);
+    try {
+      const { data } = await jdMatch(file, jdText);
+      setJdResult(data);
+    } catch (e) {
+      console.error(e);
+      setJdResult({ error: e?.response?.data?.detail || "Failed to analyse JD." });
+    } finally {
+      setLoadingJd(false);
+    }
+  };
+
+  const handleGenerateInterview = async () => {
+    if (!file) return;
+    setLoadingInterview(true);
+    try {
+      const { data } = await generateInterviewQuestions(file);
+      setInterviewData(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingInterview(false);
+    }
+  };
+
   const tabs = [
     { id: "overview", label: "Overview", icon: "📊" },
     { id: "skills", label: "Skills", icon: "🧠" },
     { id: "jobs", label: "Job Matches", icon: "💼" },
+    { id: "jd-match", label: "JD Match", icon: "🎯" },
+    { id: "interview", label: "Interview Prep", icon: "🎤" },
     { id: "history", label: "History", icon: "🗂️" },
     { id: "suggestions", label: "Suggestions", icon: "💡" },
     { id: "optimized", label: "Optimized", icon: "✨" },
@@ -376,6 +415,194 @@ export default function Dashboard() {
                 <button className="btn btn-primary" onClick={handleSuggest} disabled={loadingSuggest || !file}>
                   {loadingSuggest ? "Loading…" : "💡 Get Suggestions"}
                 </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── JD MATCH TAB ─────────────────────────────────── */}
+        {activeTab === "jd-match" && (
+          <div className="card">
+            <div className="section-title">🎯 Job Description Match</div>
+            <p style={{ color: "var(--text-secondary)", marginBottom: 16, fontSize: "0.9rem" }}>
+              Paste the job description below and see how well your resume matches it.
+            </p>
+
+            <textarea
+              value={jdText}
+              onChange={(e) => setJdText(e.target.value)}
+              placeholder="Paste the full job description here…"
+              rows={8}
+              style={{
+                width: "100%", padding: "14px 16px", borderRadius: "var(--radius-md)",
+                background: "var(--bg-surface)", border: "1px solid var(--border)",
+                color: "var(--text-primary)", fontSize: "0.9rem", lineHeight: 1.65,
+                resize: "vertical", outline: "none", boxSizing: "border-box",
+                fontFamily: "inherit",
+              }}
+            />
+
+            <div style={{ marginTop: 14, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <button
+                className="btn btn-primary"
+                onClick={handleJdMatch}
+                disabled={loadingJd || !file || !jdText.trim()}
+                title={!file ? "Re-upload your resume first" : ""}
+              >
+                {loadingJd ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Analysing…</> : "🎯 Analyse Match"}
+              </button>
+              {!file && (
+                <span style={{ fontSize: "0.8rem", color: "var(--warning)" }}>⚠ Re-upload resume to use this feature</span>
+              )}
+            </div>
+
+            {jdResult?.error && (
+              <div style={{ marginTop: 20, padding: "12px 16px", background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.2)", borderRadius: "var(--radius-md)", color: "var(--danger)" }}>
+                {jdResult.error}
+              </div>
+            )}
+
+            {jdResult && !jdResult.error && (
+              <div style={{ marginTop: 28 }}>
+                {/* Match Score */}
+                <div style={{ textAlign: "center", marginBottom: 28 }}>
+                  <div style={{ fontSize: "3.5rem", fontWeight: 900,
+                    background: "linear-gradient(135deg, var(--accent-1), var(--accent-2))",
+                    WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                    {jdResult.match_percent}%
+                  </div>
+                  <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: 12 }}>JD Match Score</div>
+                  <div style={{ width: "100%", height: 12, background: "var(--bg-surface)", borderRadius: 99, border: "1px solid var(--border)", overflow: "hidden" }}>
+                    <div style={{
+                      height: "100%", borderRadius: 99, transition: "width 0.8s ease",
+                      width: `${jdResult.match_percent}%`,
+                      background: jdResult.match_percent >= 70
+                        ? "linear-gradient(90deg, #22d3a4, #10b981)"
+                        : jdResult.match_percent >= 40
+                        ? "linear-gradient(90deg, #f59e0b, #f97316)"
+                        : "linear-gradient(90deg, #f43f5e, #e11d48)",
+                    }} />
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: "0.8rem", fontWeight: 600,
+                    color: jdResult.match_percent >= 70 ? "var(--success)" : jdResult.match_percent >= 40 ? "var(--warning)" : "var(--danger)" }}>
+                    {jdResult.match_percent >= 70 ? "Strong Match 🔥" : jdResult.match_percent >= 40 ? "Moderate Match ⚡" : "Weak Match — Review Missing Skills"}
+                  </div>
+                </div>
+
+                {/* Matched & Missing columns */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  <div style={{ background: "rgba(34,211,164,0.06)", border: "1px solid rgba(34,211,164,0.18)", borderRadius: "var(--radius-md)", padding: "16px 18px" }}>
+                    <div style={{ fontWeight: 700, marginBottom: 12, color: "var(--success)", fontSize: "0.875rem" }}>✅ Matched Skills ({jdResult.matched_skills.length})</div>
+                    {jdResult.matched_skills.length > 0
+                      ? <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {jdResult.matched_skills.map(s => (
+                            <span key={s} style={{ padding: "4px 10px", borderRadius: 99, background: "rgba(34,211,164,0.15)", color: "var(--success)", fontSize: "0.8rem", fontWeight: 600 }}>{s}</span>
+                          ))}
+                        </div>
+                      : <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>No matching skills found.</p>
+                    }
+                  </div>
+
+                  <div style={{ background: "rgba(244,63,94,0.06)", border: "1px solid rgba(244,63,94,0.18)", borderRadius: "var(--radius-md)", padding: "16px 18px" }}>
+                    <div style={{ fontWeight: 700, marginBottom: 12, color: "var(--danger)", fontSize: "0.875rem" }}>❌ Missing Skills ({jdResult.missing_skills.length})</div>
+                    {jdResult.missing_skills.length > 0
+                      ? <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {jdResult.missing_skills.map(s => (
+                            <span key={s} style={{ padding: "4px 10px", borderRadius: 99, background: "rgba(244,63,94,0.12)", color: "var(--danger)", fontSize: "0.8rem", fontWeight: 600 }}>{s}</span>
+                          ))}
+                        </div>
+                      : <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Great — no missing skills detected!</p>
+                    }
+                  </div>
+                </div>
+
+                {jdResult.note && (
+                  <p style={{ marginTop: 14, fontSize: "0.8rem", color: "var(--text-secondary)", fontStyle: "italic" }}>{jdResult.note}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── INTERVIEW PREP TAB ───────────────────────────── */}
+        {activeTab === "interview" && (
+          <div className="card">
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+              <div className="section-title" style={{ margin: 0 }}>🎤 Interview Prep</div>
+              {interviewData?.mode === "ai" && (
+                <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
+                  padding: "3px 10px", borderRadius: 99, background: "rgba(34,211,164,0.12)",
+                  color: "var(--success)", border: "1px solid rgba(34,211,164,0.3)" }}>✨ AI Mode</span>
+              )}
+            </div>
+            <p style={{ color: "var(--text-secondary)", marginBottom: 20, fontSize: "0.9rem" }}>
+              Get tailored interview questions based on your resume and detected best role.
+            </p>
+
+            {!interviewData ? (
+              <div style={{ textAlign: "center", padding: "32px 0" }}>
+                <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+                  {!file ? "Re-upload your resume to generate interview questions." : "Click below to generate questions tailored to your background."}
+                </p>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleGenerateInterview}
+                  disabled={loadingInterview || !file}
+                >
+                  {loadingInterview ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Generating…</> : "🎤 Generate Questions"}
+                </button>
+              </div>
+            ) : (
+              <div>
+                {interviewData.role && (
+                  <div style={{ marginBottom: 20, padding: "10px 16px", borderRadius: "var(--radius-sm)",
+                    background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)",
+                    color: "var(--text-secondary)", fontSize: "0.875rem" }}>
+                    🎯 Questions tailored for: <strong style={{ color: "var(--text-primary)" }}>{interviewData.role}</strong>
+                  </div>
+                )}
+
+                {/* Technical Questions */}
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12, color: "var(--accent-2)" }}>⚙️ Technical Questions</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {(interviewData.questions?.technical || []).map((q, i) => (
+                      <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start",
+                        padding: "14px 18px", borderRadius: "var(--radius-md)",
+                        background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+                        <div style={{ minWidth: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                          background: "linear-gradient(135deg, var(--accent-1), var(--accent-2))",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: "0.8rem", fontWeight: 700, color: "#fff" }}>{i + 1}</div>
+                        <p style={{ fontSize: "0.92rem", lineHeight: 1.65, color: "var(--text-primary)", margin: 0, paddingTop: 3 }}>{q}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Behavioral Questions */}
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12, color: "#f59e0b" }}>🤝 Behavioral Questions</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {(interviewData.questions?.behavioral || []).map((q, i) => (
+                      <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start",
+                        padding: "14px 18px", borderRadius: "var(--radius-md)",
+                        background: "var(--bg-surface)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                        <div style={{ minWidth: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                          background: "linear-gradient(135deg, #f59e0b, #f97316)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: "0.8rem", fontWeight: 700, color: "#fff" }}>{i + 1}</div>
+                        <p style={{ fontSize: "0.92rem", lineHeight: 1.65, color: "var(--text-primary)", margin: 0, paddingTop: 3 }}>{q}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 20 }}>
+                  <button className="btn btn-ghost" onClick={handleGenerateInterview} disabled={loadingInterview || !file}>
+                    {loadingInterview ? "Regenerating…" : "🔄 Regenerate"}
+                  </button>
+                </div>
               </div>
             )}
           </div>

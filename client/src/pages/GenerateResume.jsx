@@ -39,11 +39,6 @@ function getSavedBuilderDraft() {
   }
 }
 
-const templateOptions = [
-  { id: "minimal", label: "Minimal" },
-  { id: "modern", label: "Modern" },
-  { id: "developer", label: "Developer Style" },
-];
 
 export default function GenerateResume() {
   const location = useLocation();
@@ -241,18 +236,6 @@ export default function GenerateResume() {
             Fill the form, then click Generate Resume to open preview and download options.
           </p>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
-            {templateOptions.map((tpl) => (
-              <button
-                key={tpl.id}
-                className={`btn ${selectedTemplate === tpl.id ? "btn-primary" : "btn-ghost"}`}
-                onClick={() => setSelectedTemplate(tpl.id)}
-                style={{ padding: "8px 14px", fontSize: "0.85rem" }}
-              >
-                {tpl.label}
-              </button>
-            ))}
-          </div>
 
           <div className="builder-actions">
             <button className="btn btn-ghost" onClick={autofillFromAnalysis}>✨ Autofill From Analyzer</button>

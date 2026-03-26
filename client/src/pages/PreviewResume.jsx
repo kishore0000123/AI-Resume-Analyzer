@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { useLocation, useNavigate } from "react-router-dom";
 import StepIndicator from "../components/StepIndicator";
@@ -17,12 +17,21 @@ function getSavedBuilderDraft() {
 export default function PreviewResume() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Compute draft FIRST so useState can read its values
+  const draft = location.state?.draft || getSavedBuilderDraft();
+
   const [currentStep, setCurrentStep] = useState(2);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", text: "" });
+  const [selectedTemplate, setSelectedTemplate] = useState(draft?.selectedTemplate || "minimal");
 
-  const draft = useMemo(() => location.state?.draft || getSavedBuilderDraft(), [location.state]);
+  const templateOptions = [
+    { id: "minimal", label: "Minimal", icon: "📄" },
+    { id: "modern", label: "Modern", icon: "🎨" },
+    { id: "developer", label: "Developer Style", icon: "💻" },
+  ];
 
   if (!draft?.form) {
     return (
@@ -36,7 +45,7 @@ export default function PreviewResume() {
     );
   }
 
-  const { form, selectedTemplate } = draft;
+  const { form } = draft;
 
   const downloadPdf = async () => {
     const previewEl = document.getElementById("resume-preview");
@@ -172,6 +181,31 @@ export default function PreviewResume() {
           )}
         </div>
 
+        {/* Template switcher card */}
+        <div className="card" style={{ marginBottom: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <div className="section-title" style={{ marginBottom: 4 }}>🎨 Choose Template</div>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: 0 }}>
+                Switch template — the preview updates instantly
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {templateOptions.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  className={`btn ${selectedTemplate === tpl.id ? "btn-primary" : "btn-ghost"}`}
+                  onClick={() => setSelectedTemplate(tpl.id)}
+                  style={{ padding: "9px 18px", fontSize: "0.85rem" }}
+                >
+                  {tpl.icon} {tpl.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Resume preview card */}
         <div className="card">
           <ResumePreview form={form} selectedTemplate={selectedTemplate} previewId="resume-preview" />
         </div>

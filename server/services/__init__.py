@@ -12,10 +12,10 @@ Core modules:
 from .extractor import extract_text_from_bytes
 
 # Analysis functions
-from .analyzer import extract_skills, score_resume, match_jobs, best_role, detect_sections, get_role_suggestions
+from .analyzer import extract_skills, score_resume, match_jobs, best_role, detect_sections, get_role_suggestions, jd_match
 
 # AI helpers
-from .ai_helper import get_suggestions, optimize_resume, get_chat_reply
+from .ai_helper import get_suggestions, optimize_resume, get_chat_reply, generate_interview_questions
 
 # Database
 from .db import get_db
@@ -31,10 +31,12 @@ __all__ = [
     "best_role",
     "detect_sections",
     "get_role_suggestions",
+    "jd_match",
     # AI
     "get_suggestions",
     "optimize_resume",
     "get_chat_reply",
+    "generate_interview_questions",
     # Database
     "get_db",
 ]

@@ -363,125 +363,547 @@ body {
   color: var(--text-primary);
   background: rgba(108, 99, 255, 0.14);
 }
+/* ─── Resume Preview — shared wrapper ───────────────────────────────────── */
+.rp {
+  font-family: 'Inter', sans-serif;
+  min-height: 620px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.22);
+}
 
-.resume-preview {
+/* ════════════════════════════════════════════════════════════════
+   MINIMAL TEMPLATE — clean white, left-aligned, typographic
+   ════════════════════════════════════════════════════════════════ */
+.rp-minimal {
   background: #ffffff;
   color: #0f172a;
-  border-radius: 14px;
+  padding: 32px 36px;
   border: 1px solid #e2e8f0;
-  padding: 28px;
-  line-height: 1.65;
-  min-height: 620px;
-  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
 }
 
-.resume-theme-minimal {
-  background: #ffffff;
-  border-color: #dbe2ea;
-}
-
-.resume-theme-minimal .resume-preview-header h2 {
-  letter-spacing: 0.01em;
-}
-
-.resume-preview h2 {
-  margin: 0 0 6px;
-  font-size: 1.9rem;
+.rp-min-header h2 {
+  font-size: 2rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  margin: 0 0 4px;
 }
 
-.resume-preview h3 {
-  margin: 16px 0 6px;
-  font-size: 1rem;
-  color: #1e293b;
-}
-
-.resume-preview p {
-  margin: 0;
-  color: #334155;
-}
-
-.resume-preview-header p {
-  font-size: 0.92rem;
+.rp-min-header p {
+  font-size: 0.85rem;
   color: #64748b;
-}
-
-.resume-preview-divider {
-  border: none;
-  border-top: 1px solid #e2e8f0;
-  margin: 14px 0 12px;
-}
-
-.resume-preview-list {
   margin: 0;
-  padding-left: 20px;
-  color: #334155;
 }
 
-.resume-preview-list li {
-  margin-bottom: 4px;
+.rp-min-rule {
+  border: none;
+  border-top: 2px solid #0f172a;
+  margin: 14px 0 18px;
 }
 
-.resume-preview-modern {
-  border-top: 8px solid #1e3a8a;
-}
-
-.resume-theme-modern {
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 22%);
-  border-color: #bfdbfe;
-}
-
-.resume-theme-modern .resume-preview-header {
-  background: linear-gradient(90deg, #1e3a8a, #2563eb);
-  margin: -28px -28px 16px;
-  padding: 20px 28px 16px;
-  border-radius: 14px 14px 0 0;
-}
-
-.resume-theme-modern .resume-preview-header h2,
-.resume-theme-modern .resume-preview-header p {
-  color: #eff6ff;
-}
-
-.resume-theme-modern .resume-preview-divider {
-  border-top-color: #bfdbfe;
-}
-
-.resume-preview-developer {
-  background: #0b1220;
-  color: #e2e8f0;
-  border-color: #1f2937;
-}
-
-.resume-theme-developer {
-  background: #0b1220;
-  border-color: #1f2937;
-  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.55);
-}
-
-.resume-theme-developer .resume-preview-header h2 {
-  color: #22d3a4;
-  font-family: "Courier New", monospace;
-}
-
-.resume-theme-developer .resume-preview-header p {
+.rp-min-heading {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   color: #94a3b8;
+  margin: 20px 0 8px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 6px;
 }
 
-.resume-theme-developer .resume-preview-divider {
-  border-top-color: #334155;
+.rp-min-body {
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: #334155;
+  margin: 0;
 }
 
-.resume-preview-developer h3,
-.resume-preview-developer p {
-  color: #cbd5e1;
+.rp-min-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
 }
 
-.resume-theme-developer .resume-preview-list {
-  color: #cbd5e1;
+.rp-min-tag {
+  font-size: 0.78rem;
+  padding: 3px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 99px;
+  color: #475569;
+  background: #f8fafc;
+}
+
+.rp-min-list {
+  padding-left: 16px;
+  margin: 4px 0 0;
+}
+
+.rp-min-list li {
+  font-size: 0.88rem;
+  color: #334155;
+  margin-bottom: 5px;
+  line-height: 1.6;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MODERN TEMPLATE — blue banner + two-column sidebar layout
+   ════════════════════════════════════════════════════════════════ */
+.rp-modern {
+  background: #fff;
+  color: #1e293b;
+  border: 1px solid #bfdbfe;
+}
+
+.rp-mod-header {
+  background: linear-gradient(130deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);
+  padding: 24px 28px 20px;
+}
+
+.rp-mod-name {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #eff6ff;
+  margin: 0 0 10px;
+  letter-spacing: -0.01em;
+}
+
+.rp-mod-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rp-mod-contact-chip {
+  font-size: 0.78rem;
+  background: rgba(255,255,255,0.15);
+  color: #dbeafe;
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.rp-mod-body {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  min-height: 520px;
+}
+
+.rp-mod-sidebar {
+  background: #f0f4ff;
+  padding: 20px 16px;
+  border-right: 1px solid #dbeafe;
+}
+
+.rp-mod-main {
+  padding: 20px 22px;
+}
+
+.rp-mod-section {
+  margin-bottom: 18px;
+}
+
+.rp-mod-heading {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #2563eb;
+  margin: 0 0 10px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid #bfdbfe;
+}
+
+.rp-mod-text {
+  font-size: 0.85rem;
+  line-height: 1.65;
+  color: #374151;
+  margin: 0;
+}
+
+.rp-mod-skill-bar {
+  margin-bottom: 8px;
+}
+
+.rp-mod-skill-label {
+  font-size: 0.78rem;
+  color: #374151;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.rp-mod-bar-track {
+  height: 5px;
+  background: #dbeafe;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.rp-mod-bar-fill {
+  height: 100%;
+  width: 75%;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  border-radius: 99px;
+}
+
+.rp-mod-project-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.rp-mod-bullet {
+  color: #2563eb;
+  font-size: 0.6rem;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DEVELOPER STYLE — dark premium resume with terminal accents
+   ════════════════════════════════════════════════════════════════ */
+.rp-dev {
+  background: #0d1117;
+  color: #e6edf3;
+  border: 1px solid #30363d;
+  font-family: 'Inter', sans-serif;
+  min-height: 620px;
+}
+
+.rp-dev-header {
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  border-bottom: 1px solid #21262d;
+  padding: 28px 32px 22px;
+  position: relative;
+}
+
+.rp-dev-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 32px; right: 32px;
+  height: 2px;
+  background: linear-gradient(90deg, #22d3a4, #6c63ff, transparent);
+  border-radius: 99px;
+}
+
+.rp-dev-name {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #22d3a4;
+  margin: 0 0 12px;
+  letter-spacing: -0.02em;
+}
+
+.rp-dev-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.rp-dev-contact-item {
+  font-size: 0.83rem;
+  color: #8b949e;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.rp-dev-prompt {
+  color: #22d3a4;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+}
+
+.rp-dev-content {
+  padding: 20px 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rp-dev-section {
+  padding: 14px 0;
+  border-bottom: 1px solid #21262d;
+}
+
+.rp-dev-section:last-child {
+  border-bottom: none;
+}
+
+.rp-dev-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #8b949e;
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rp-dev-hash {
+  color: #6c63ff;
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+}
+
+.rp-dev-text {
+  font-size: 0.87rem;
+  line-height: 1.7;
+  color: #c9d1d9;
+  margin: 0;
+}
+
+.rp-dev-skill-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.rp-dev-skill-chip {
+  font-size: 0.78rem;
+  padding: 4px 12px;
+  border-radius: 99px;
+  background: rgba(34, 211, 164, 0.1);
+  color: #22d3a4;
+  border: 1px solid rgba(34, 211, 164, 0.25);
+  font-weight: 500;
+}
+
+.rp-dev-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.rp-dev-list-item {
+  font-size: 0.87rem;
+  color: #c9d1d9;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  line-height: 1.6;
+}
+
+.rp-dev-arrow {
+  color: #6c63ff;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+
+/* ─── Modern template — enhanced elements ───────────────────────────────── */
+.rp-mod-header {
+  background: linear-gradient(130deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);
+  padding: 22px 24px 18px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.rp-mod-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.rp-mod-header-info {
+  flex: 1;
+}
+
+.rp-mod-location {
+  font-size: 0.8rem;
+  color: #bfdbfe;
+  margin: 2px 0 8px;
+}
+
+.rp-mod-skill-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.rp-mod-skill-level {
+  font-size: 0.68rem;
+  color: #2563eb;
+  font-weight: 600;
+  background: rgba(37,99,235,0.1);
+  padding: 1px 7px;
+  border-radius: 99px;
+}
+
+.rp-mod-edu-card {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  background: #e8f0ff;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.rp-mod-edu-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.rp-mod-contact-card {
+  margin-top: auto;
+}
+
+.rp-mod-contact-row {
+  font-size: 0.78rem;
+  color: #475569;
+  margin-bottom: 5px;
+  word-break: break-all;
+}
+
+.rp-mod-project-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: #f0f7ff;
+  border-left: 3px solid #2563eb;
+  border-radius: 0 6px 6px 0;
+}
+
+.rp-mod-project-num {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #2563eb;
+  opacity: 0.6;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.rp-mod-timeline {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.rp-mod-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2563eb;
+  flex-shrink: 0;
+  margin-top: 6px;
+  box-shadow: 0 0 0 3px #bfdbfe;
+}
+
+/* ─── Developer Style — enhanced elements ───────────────────────────────── */
+.rp-dev-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.rp-dev-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #22d3a4;
+  background: rgba(34,211,164,0.12);
+  border: 1px solid rgba(34,211,164,0.3);
+  border-radius: 99px;
+  padding: 3px 10px;
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.rp-dev-dots-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 10px);
+  gap: 3px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.rp-dev-dot-cell {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.rp-dev-dot-0 { background: #0e4429; }
+.rp-dev-dot-1 { background: #006d32; }
+.rp-dev-dot-2 { background: #26a641; }
+.rp-dev-dot-3 { background: #39d353; }
+
+.rp-dev-cmd-block {
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 8px 14px;
+  margin-bottom: 4px;
+  display: flex;
+  gap: 8px;
+}
+
+.rp-dev-cmd-prompt {
+  color: #22d3a4;
+  font-weight: 700;
+}
+
+.rp-dev-cmd-git {
+  color: #79c0ff;
+}
+
+.rp-dev-chip-0 {
+  background: rgba(34,211,164,0.1);
+  color: #22d3a4;
+  border-color: rgba(34,211,164,0.25);
+}
+.rp-dev-chip-1 {
+  background: rgba(108,99,255,0.12);
+  color: #a78bfa;
+  border-color: rgba(108,99,255,0.3);
+}
+.rp-dev-chip-2 {
+  background: rgba(56,189,248,0.1);
+  color: #38bdf8;
+  border-color: rgba(56,189,248,0.25);
+}
+
+.rp-dev-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #21262d;
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.rp-dev-stat {
+  font-size: 0.75rem;
+  color: #6e7681;
+  font-family: 'Courier New', monospace;
 }
 
 /* ─── Resume Bot Panel (Requested Layout) ──────────────────────────────── */
+
 .bot-container {
   max-width: 800px;
   margin: auto;
