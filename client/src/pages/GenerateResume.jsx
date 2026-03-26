@@ -39,6 +39,11 @@ function getSavedBuilderDraft() {
   }
 }
 
+const templateOptions = [
+  { id: "minimal", label: "Minimal" },
+  { id: "modern", label: "Modern" },
+  { id: "developer", label: "Developer Style" },
+];
 
 export default function GenerateResume() {
   const location = useLocation();

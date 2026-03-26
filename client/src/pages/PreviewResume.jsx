@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { useLocation, useNavigate } from "react-router-dom";
 import StepIndicator from "../components/StepIndicator";
@@ -17,21 +17,12 @@ function getSavedBuilderDraft() {
 export default function PreviewResume() {
   const location = useLocation();
   const navigate = useNavigate();
-
-  // Compute draft FIRST so useState can read its values
-  const draft = location.state?.draft || getSavedBuilderDraft();
-
   const [currentStep, setCurrentStep] = useState(2);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", text: "" });
-  const [selectedTemplate, setSelectedTemplate] = useState(draft?.selectedTemplate || "minimal");
 
-  const templateOptions = [
-    { id: "minimal", label: "Minimal", icon: "📄" },
-    { id: "modern", label: "Modern", icon: "🎨" },
-    { id: "developer", label: "Developer Style", icon: "💻" },
-  ];
+  const draft = useMemo(() => location.state?.draft || getSavedBuilderDraft(), [location.state]);
 
   if (!draft?.form) {
     return (
@@ -45,7 +36,7 @@ export default function PreviewResume() {
     );
   }
 
-  const { form } = draft;
+  const { form, selectedTemplate } = draft;
 
   const downloadPdf = async () => {
     const previewEl = document.getElementById("resume-preview");
@@ -180,7 +171,6 @@ export default function PreviewResume() {
             </div>
           )}
         </div>
-
         {/* Template switcher card */}
         <div className="card" style={{ marginBottom: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
@@ -206,6 +196,8 @@ export default function PreviewResume() {
         </div>
 
         {/* Resume preview card */}
+=======
+>>>>>>> ec71a4d818a701f169e4a0b18785ba413d451ea4
         <div className="card">
           <ResumePreview form={form} selectedTemplate={selectedTemplate} previewId="resume-preview" />
         </div>

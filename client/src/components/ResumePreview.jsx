@@ -260,7 +260,6 @@ function DeveloperTemplate({ form }) {
   );
 }
 
-
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function ResumePreview({ form, selectedTemplate = "minimal", previewId = "resume-preview" }) {
   return (
