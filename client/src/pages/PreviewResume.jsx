@@ -171,7 +171,33 @@ export default function PreviewResume() {
             </div>
           )}
         </div>
+        {/* Template switcher card */}
+        <div className="card" style={{ marginBottom: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <div className="section-title" style={{ marginBottom: 4 }}>🎨 Choose Template</div>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: 0 }}>
+                Switch template — the preview updates instantly
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {templateOptions.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  className={`btn ${selectedTemplate === tpl.id ? "btn-primary" : "btn-ghost"}`}
+                  onClick={() => setSelectedTemplate(tpl.id)}
+                  style={{ padding: "9px 18px", fontSize: "0.85rem" }}
+                >
+                  {tpl.icon} {tpl.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
+        {/* Resume preview card */}
+=======
+>>>>>>> ec71a4d818a701f169e4a0b18785ba413d451ea4
         <div className="card">
           <ResumePreview form={form} selectedTemplate={selectedTemplate} previewId="resume-preview" />
         </div>

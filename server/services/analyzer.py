@@ -262,6 +262,70 @@ def best_role(matches: list[dict]) -> dict | None:
     return matches[0]
 
 
+def _tokenize_jd(text: str) -> set[str]:
+    """Extract meaningful keywords from a JD text (words 2+ chars, alpha only)."""
+    words = re.findall(r'[a-zA-Z][a-zA-Z0-9+#.]*', text.lower())
+    stopwords = {
+        "the", "and", "for", "with", "you", "our", "are", "will", "have",
+        "this", "that", "from", "your", "can", "must", "about", "their",
+        "be", "in", "of", "to", "a", "an", "is", "or", "we", "not", "as",
+        "at", "by", "on", "us", "it", "its", "all", "any", "but", "has"
+    }
+    return {w for w in words if len(w) >= 2 and w not in stopwords}
+
+
+def jd_match(resume_text: str, jd_text: str, resume_skills: list[str]) -> dict:
+    """
+    Compare resume against a job description.
+    Returns match_percent, matched_skills, missing_skills, jd_keywords.
+    """
+    resume_skills_set = {s.lower() for s in resume_skills}
+
+    # Extract known skills from JD
+    jd_text_lower = jd_text.lower()
+    jd_skills = set()
+    for skill in SKILLS_DB:
+        pattern = r'\b' + re.escape(skill) + r'\b'
+        if re.search(pattern, jd_text_lower):
+            jd_skills.add(skill)
+
+    # Also grab raw JD keywords for keyword-level overlap
+    jd_keywords = _tokenize_jd(jd_text)
+    resume_keywords = _tokenize_jd(resume_text)
+
+    if not jd_skills:
+        # Fallback: keyword-level matching when no known skills found in JD
+        if not jd_keywords:
+            return {
+                "match_percent": 0,
+                "matched_skills": [],
+                "missing_skills": [],
+                "jd_keywords": [],
+                "note": "No recognisable skills found in the JD. Try including specific tech keywords.",
+            }
+        common = jd_keywords & resume_keywords
+        pct = round(len(common) / len(jd_keywords) * 100, 1)
+        return {
+            "match_percent": min(pct, 100),
+            "matched_skills": sorted(list(common))[:20],
+            "missing_skills": sorted(list(jd_keywords - resume_keywords))[:20],
+            "jd_keywords": sorted(list(jd_keywords))[:30],
+            "note": "Matched using general keyword overlap (no specific tech skills detected in JD).",
+        }
+
+    matched = sorted(jd_skills & resume_skills_set)
+    missing = sorted(jd_skills - resume_skills_set)
+    pct = round(len(matched) / len(jd_skills) * 100, 1) if jd_skills else 0
+
+    return {
+        "match_percent": min(pct, 100),
+        "matched_skills": matched,
+        "missing_skills": missing,
+        "jd_keywords": sorted(list(jd_skills)),
+        "note": None,
+    }
+
+
 def get_role_suggestions(role: str, current_skills: list[str] | None = None) -> dict:
     """Return role-specific skills, missing skills, project ideas, and ATS keywords."""
     current = {s.lower().strip() for s in (current_skills or []) if s and s.strip()}

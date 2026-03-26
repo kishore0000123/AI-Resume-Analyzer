@@ -39,4 +39,21 @@ export const askBotQuestion = (question) => API.post("/chat", { question });
 export const getRoleSuggestions = (role, currentSkills = []) =>
   API.post("/role-suggestions", { role, current_skills: currentSkills });
 
+export const jdMatch = (file, jdText) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("jd_text", jdText);
+  return API.post("/jd-match", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};
+
+export const generateInterviewQuestions = (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return API.post("/interview-questions", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};
+
 export default API;

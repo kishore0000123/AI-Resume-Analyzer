@@ -1,6 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
-from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db, get_chat_reply, get_role_suggestions
+from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db, get_chat_reply, get_role_suggestions, jd_match, generate_interview_questions
 import datetime
 
 router = APIRouter()
@@ -177,3 +177,56 @@ def role_suggestions(payload: RoleSuggestionRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate role suggestions: {e}")
+
+
+@router.post("/jd-match")
+async def jd_match_endpoint(
+    file: UploadFile = File(...),
+    jd_text: str = Form(...),
+):
+    """Compare resume against a pasted job description and return a match score."""
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+    if not jd_text or len(jd_text.strip()) < 20:
+        raise HTTPException(status_code=400, detail="Job description is too short.")
+
+    try:
+        content = await file.read()
+        text = extract_text_from_bytes(content)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read resume: {e}")
+
+    if not text or len(text.strip()) < 50:
+        raise HTTPException(status_code=422, detail="Could not extract readable text from the PDF.")
+
+    skills = extract_skills(text)
+    result = jd_match(text, jd_text, skills)
+    return result
+
+
+@router.post("/interview-questions")
+async def interview_questions_endpoint(file: UploadFile = File(...)):
+    """Generate role-tailored interview questions from a resume."""
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+
+    try:
+        content = await file.read()
+        text = extract_text_from_bytes(content)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read resume: {e}")
+
+    if not text or len(text.strip()) < 50:
+        raise HTTPException(status_code=422, detail="Could not extract readable text from the PDF.")
+
+    skills = extract_skills(text)
+    job_matches = match_jobs(skills)
+    top_role = best_role(job_matches)
+    role_name = top_role["role"] if top_role else "General"
+
+    result = generate_interview_questions(text, role_name, skills)
+    return result

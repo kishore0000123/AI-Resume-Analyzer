@@ -189,6 +189,171 @@ def _chat_fallback_reply(question: str) -> dict:
     }
 
 
+_INTERVIEW_BANKS = {
+    "Frontend Developer": {
+        "technical": [
+            "Explain the difference between `==` and `===` in JavaScript.",
+            "What is the virtual DOM in React and how does it improve performance?",
+            "How would you optimise a React app that re-renders too frequently?",
+            "Describe CSS specificity and how it resolves style conflicts.",
+            "What are React Hooks and why were they introduced?",
+        ],
+        "behavioral": [
+            "Tell me about a UI challenge you solved creatively.",
+            "How do you stay updated with fast-changing frontend tools?",
+            "Describe a time you improved the performance of a web page.",
+        ],
+    },
+    "Backend Developer": {
+        "technical": [
+            "What is the difference between REST and GraphQL?",
+            "How do you handle database transactions and ensure data consistency?",
+            "Explain the concept of middleware in FastAPI or Express.",
+            "What strategies do you use to scale a backend service?",
+            "How would you design rate limiting for a public API?",
+        ],
+        "behavioral": [
+            "Tell me about an API you designed from scratch.",
+            "How do you handle breaking changes in a live API?",
+            "Describe a time you debugged a tricky production issue.",
+        ],
+    },
+    "Data Scientist": {
+        "technical": [
+            "What is the bias-variance tradeoff in machine learning?",
+            "How do you handle class imbalance in a classification problem?",
+            "Explain the difference between bagging and boosting.",
+            "What evaluation metrics would you use for a recommendation system?",
+            "How would you detect and handle outliers in a dataset?",
+        ],
+        "behavioral": [
+            "Describe a project where your model had unexpected results.",
+            "How do you communicate complex technical results to non-technical stakeholders?",
+            "Tell me about a time you had to work with messy, incomplete data.",
+        ],
+    },
+    "ML Engineer": {
+        "technical": [
+            "How do you serve a machine learning model in production?",
+            "What is model drift and how do you detect it?",
+            "Explain the difference between batch and online learning.",
+            "How would you implement a simple recommendation engine?",
+            "What tools do you use for experiment tracking in ML?",
+        ],
+        "behavioral": [
+            "Describe how you chose a model architecture for a real project.",
+            "How do you collaborate with data engineers and product managers?",
+            "Tell me about a time your model failed in production and how you fixed it.",
+        ],
+    },
+    "DevOps Engineer": {
+        "technical": [
+            "What is the difference between Docker and a virtual machine?",
+            "How do you implement a zero-downtime deployment?",
+            "Explain Kubernetes pod scheduling and resource limits.",
+            "What is Infrastructure as Code and what tools do you use for it?",
+            "How do you set up a CI/CD pipeline for a microservices app?",
+        ],
+        "behavioral": [
+            "Describe a critical outage you helped resolve.",
+            "How do you balance speed of delivery with system reliability?",
+            "Tell me about a time you automated a manual process significantly.",
+        ],
+    },
+    "Full Stack Developer": {
+        "technical": [
+            "How do you manage state across a React frontend and Node.js backend?",
+            "What is CORS and how do you configure it properly?",
+            "Explain the HTTP request lifecycle from browser to database.",
+            "How do you implement authentication with JWT tokens?",
+            "What strategies do you use to keep APIs secure?",
+        ],
+        "behavioral": [
+            "Tell me about a full-stack feature you built end-to-end.",
+            "How do you prioritise frontend vs backend work in a sprint?",
+            "Describe a complex bug that crossed both layers of the stack.",
+        ],
+    },
+}
+
+_GENERAL_QUESTIONS = {
+    "technical": [
+        "Explain the difference between synchronous and asynchronous programming.",
+        "What is version control and why is Git important in a team?",
+        "How do you approach debugging an unfamiliar codebase?",
+        "What is the difference between SQL and NoSQL databases?",
+        "Describe the software development life cycle (SDLC).",
+    ],
+    "behavioral": [
+        "Tell me about a challenging project you worked on and what you learned.",
+        "How do you handle tight deadlines and competing priorities?",
+        "Describe a time you disagreed with a teammate and how you resolved it.",
+    ],
+}
+
+
+def _fallback_interview_questions(role: str) -> dict:
+    """Return role-specific interview questions from the offline bank."""
+    bank = _INTERVIEW_BANKS.get(role, _GENERAL_QUESTIONS)
+    return {
+        "questions": {
+            "technical": bank["technical"],
+            "behavioral": bank["behavioral"],
+        },
+        "mode": "offline",
+        "role": role or "General",
+    }
+
+
+def generate_interview_questions(text: str, role: str, skills: list) -> dict:
+    """
+    Generate interview questions based on the resume.
+    Returns { questions: { technical: [...], behavioral: [...] }, mode, role }.
+    """
+    skills_str = ", ".join(skills[:15]) if skills else "general tech skills"
+    system = (
+        "You are an expert technical interviewer. Generate concise, specific interview questions "
+        "based on the candidate's resume. Return EXACTLY this format:\n"
+        "TECHNICAL:\n1. ...\n2. ...\n3. ...\n4. ...\n5. ...\n\nBEHAVIORAL:\n1. ...\n2. ...\n3. ..."
+    )
+    user = (
+        f"Candidate's best role: {role}\n"
+        f"Detected skills: {skills_str}\n\n"
+        f"Resume (first 1500 chars):\n{text[:1500]}\n\n"
+        "Generate 5 technical and 3 behavioral interview questions."
+    )
+
+    result = _call_openai(system, user)
+    if result and not result.startswith("ERROR:"):
+        technical, behavioral = [], []
+        section = None
+        for line in result.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            if "TECHNICAL" in line.upper():
+                section = "technical"
+                continue
+            if "BEHAVIORAL" in line.upper():
+                section = "behavioral"
+                continue
+            # Strip leading number/dot/dash
+            q = line.lstrip("0123456789.-) ").strip()
+            if q:
+                if section == "technical" and len(technical) < 5:
+                    technical.append(q)
+                elif section == "behavioral" and len(behavioral) < 3:
+                    behavioral.append(q)
+        if technical or behavioral:
+            return {
+                "questions": {"technical": technical, "behavioral": behavioral},
+                "mode": "ai",
+                "role": role or "General",
+            }
+
+    return _fallback_interview_questions(role)
+
+
 def get_chat_reply(question: str) -> dict:
     """Return chatbot reply. Uses OpenAI when available, otherwise fallback rules."""
     fallback = _chat_fallback_reply(question)
