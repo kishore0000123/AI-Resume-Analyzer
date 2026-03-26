@@ -196,8 +196,6 @@ export default function PreviewResume() {
         </div>
 
         {/* Resume preview card */}
-=======
->>>>>>> ec71a4d818a701f169e4a0b18785ba413d451ea4
         <div className="card">
           <ResumePreview form={form} selectedTemplate={selectedTemplate} previewId="resume-preview" />
         </div>
