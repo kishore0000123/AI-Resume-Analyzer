@@ -178,15 +178,7 @@ export default function Dashboard() {
               onClick={() => navigate("/generate")}
               title="Open Resume Builder"
             >
-              🛠 Generate Resume
-            </button>
-            <button
-              id="suggest-btn"
-              className="btn btn-ghost"
-              onClick={handleSuggest}
-              disabled={loadingSuggest || !file}
-              title={!file ? "Re-upload your resume to get AI suggestions" : ""}
-            >
+         
               {loadingSuggest ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Loading…</> : "💡 Get Suggestions"}
             </button>
             <button

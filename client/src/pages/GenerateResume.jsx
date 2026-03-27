@@ -238,13 +238,13 @@ export default function GenerateResume() {
           <div className="section-title">🧾 Resume Generator</div>
           <StepIndicator currentStep={hasAnyContent ? 2 : 1} steps={["Fill Details", "Live Preview", "Download"]} />
           <p style={{ color: "var(--text-secondary)", marginBottom: 18 }}>
-            Fill the form, then click Generate Resume to open preview and download options.
+            Fill the form, then click Live Preview to open preview and download options.
           </p>
 
 
           <div className="builder-actions">
             <button className="btn btn-ghost" onClick={autofillFromAnalysis}>✨ Autofill From Analyzer</button>
-            <button className="btn btn-primary" onClick={goToPreview}>🚀 Generate Resume</button>
+            <button className="btn btn-primary" onClick={goToPreview}>👁 Live Preview</button>
           </div>
 
           {feedback.text && (

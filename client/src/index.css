@@ -363,7 +363,6 @@ body {
   color: var(--text-primary);
   background: rgba(108, 99, 255, 0.14);
 }
-<<<<<<< HEAD
 /* ─── Resume Preview — shared wrapper ───────────────────────────────────── */
 .rp {
   font-family: 'Inter', sans-serif;
@@ -901,7 +900,7 @@ body {
   font-size: 0.75rem;
   color: #6e7681;
   font-family: 'Courier New', monospace;
-=======
+}
 
 .resume-preview {
   background: #ffffff;
@@ -1018,7 +1017,6 @@ body {
 
 .resume-theme-developer .resume-preview-list {
   color: #cbd5e1;
->>>>>>> ec71a4d818a701f169e4a0b18785ba413d451ea4
 }
 
 /* ─── Resume Bot Panel (Requested Layout) ──────────────────────────────── */
