@@ -2,6 +2,9 @@ import { Link, useLocation } from "react-router-dom";
 
 export default function Navbar() {
   const { pathname } = useLocation();
+  const isGenerateRoute = pathname === "/generate" || pathname === "/generate-resume";
+  const isPreviewRoute = pathname === "/preview";
+
   return (
     <nav className="navbar">
       <div className="container navbar-inner">
@@ -16,10 +19,10 @@ export default function Navbar() {
           <Link to="/dashboard" className={pathname === "/dashboard" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
             Dashboard
           </Link>
-          <Link to="/generate-resume" className={pathname === "/generate-resume" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
+          <Link to="/generate-resume" className={isGenerateRoute ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
             Generate Resume
           </Link>
-          <Link to="/preview" className={pathname === "/preview" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
+          <Link to="/preview" className={isPreviewRoute ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
             👁 Live Preview
           </Link>
 
