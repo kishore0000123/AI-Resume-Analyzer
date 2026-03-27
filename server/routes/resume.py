@@ -15,6 +15,11 @@ class RoleSuggestionRequest(BaseModel):
     current_skills: list[str] = []
 
 
+class ResumeTextRequest(BaseModel):
+    text: str
+    skills: list[str] = []
+
+
 @router.get("/")
 def home():
     return {"message": "AI Resume Analyzer API is running"}
@@ -129,6 +134,36 @@ async def optimize_resume_endpoint(file: UploadFile = File(...)):
 
     optimized = optimize_resume(text)
 
+    return {"original_length": len(text), "optimized": optimized}
+
+
+@router.post("/suggest-text")
+def suggest_improvements_from_text(payload: ResumeTextRequest):
+    """Generate suggestions directly from resume text (fallback when file object isn't available)."""
+    text = (payload.text or "").strip()
+    if len(text) < 50:
+        raise HTTPException(status_code=400, detail="Resume text is too short.")
+
+    skills = payload.skills or extract_skills(text)
+    score_data = score_resume(text, skills)
+    suggestions = get_suggestions(text, skills, score_data["total"])
+
+    return {
+        "suggestions": suggestions,
+        "score": score_data["total"],
+        "skills_count": len(skills),
+    }
+
+
+@router.post("/optimize-text")
+def optimize_resume_from_text(payload: ResumeTextRequest):
+    """Optimize resume directly from resume text (fallback when file object isn't available)."""
+    text = (payload.text or "").strip()
+    if len(text) < 50:
+        raise HTTPException(status_code=400, detail="Resume text is too short.")
+
+    skills = payload.skills or extract_skills(text)
+    optimized = optimize_resume(text, skills)
     return {"original_length": len(text), "optimized": optimized}
 
 

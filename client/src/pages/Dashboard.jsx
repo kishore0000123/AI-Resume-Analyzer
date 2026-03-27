@@ -3,7 +3,12 @@ import { useState } from "react";
 import ScoreGauge from "../components/ScoreGauge";
 import JobCard from "../components/JobCard";
 import SkillBadge from "../components/SkillBadge";
-import { getHistory, optimizeResume, suggestImprovements, jdMatch, generateInterviewQuestions } from "../api/client";
+import {
+  getHistory,
+  suggestImprovements,
+  suggestImprovementsFromText,
+  generateInterviewQuestions,
+} from "../api/client";
 
 export default function Dashboard() {
   const { state } = useLocation();
@@ -24,20 +29,12 @@ export default function Dashboard() {
 
   const [suggestions, setSuggestions] = useState(null);
   const [suggestMode, setSuggestMode] = useState(null);      // "ai" | "offline"
-  const [optimized, setOptimized] = useState(null);
-  const [optimizeMode, setOptimizeMode] = useState(null);    // "ai" | "offline"
-  const [optimizeFallback, setOptimizeFallback] = useState(null); // list when offline
   const [loadingSuggest, setLoadingSuggest] = useState(false);
-  const [loadingOptimize, setLoadingOptimize] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyItems, setHistoryItems] = useState([]);
   const [historyMsg, setHistoryMsg] = useState("");
+  const [actionError, setActionError] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
-
-  // JD Match state
-  const [jdText, setJdText] = useState("");
-  const [jdResult, setJdResult] = useState(null);
-  const [loadingJd, setLoadingJd] = useState(false);
 
   // Interview Questions state
   const [interviewData, setInterviewData] = useState(null);
@@ -58,6 +55,7 @@ export default function Dashboard() {
 
   const { skills, score, job_matches, filename } = result;
   const bestRole = result.best_role;
+  const canUseTextFallback = Boolean(result?.text && result.text.trim().length >= 50);
 
   const handleOpenTab = async (tabId) => {
     setActiveTab(tabId);
@@ -80,48 +78,27 @@ export default function Dashboard() {
   };
 
   const handleSuggest = async () => {
-    if (!file) return;
+    if (!file && !canUseTextFallback) {
+      setActionError("Re-upload resume to use this feature.");
+      return;
+    }
+
     setLoadingSuggest(true);
+    setActionError("");
     try {
-      const { data } = await suggestImprovements(file);
+      const { data } = file
+        ? await suggestImprovements(file)
+        : await suggestImprovementsFromText(result.text, skills);
+
       // Backend returns { suggestions: [...], mode: "ai" | "offline" }
       setSuggestions(data.suggestions?.suggestions ?? data.suggestions ?? []);
       setSuggestMode(data.suggestions?.mode ?? "offline");
       setActiveTab("suggestions");
-    } catch (e) { console.error(e); }
-    finally { setLoadingSuggest(false); }
-  };
-
-  const handleOptimize = async () => {
-    if (!file) return;
-    setLoadingOptimize(true);
-    try {
-      const { data } = await optimizeResume(file);
-      // Backend returns { mode: "ai"|"offline", optimized: str, suggestions: [] }
-      const mode = data.mode ?? data.optimized?.mode ?? "offline";
-      const text = typeof data.optimized === "string" ? data.optimized : (data.optimized?.optimized ?? "");
-      const tips = data.suggestions ?? data.optimized?.suggestions ?? [];
-      setOptimizeMode(mode);
-      setOptimized(text);
-      setOptimizeFallback(tips);
-      setActiveTab("optimized");
-    } catch (e) { console.error(e); }
-    finally { setLoadingOptimize(false); }
-  };
-
-  const handleJdMatch = async () => {
-    if (!file || !jdText.trim()) return;
-    setLoadingJd(true);
-    setJdResult(null);
-    try {
-      const { data } = await jdMatch(file, jdText);
-      setJdResult(data);
     } catch (e) {
       console.error(e);
-      setJdResult({ error: e?.response?.data?.detail || "Failed to analyse JD." });
-    } finally {
-      setLoadingJd(false);
+      setActionError(e?.response?.data?.detail || "Failed to get suggestions.");
     }
+    finally { setLoadingSuggest(false); }
   };
 
   const handleGenerateInterview = async () => {
@@ -141,11 +118,9 @@ export default function Dashboard() {
     { id: "overview", label: "Overview", icon: "📊" },
     { id: "skills", label: "Skills", icon: "🧠" },
     { id: "jobs", label: "Job Matches", icon: "💼" },
-    { id: "jd-match", label: "JD Match", icon: "🎯" },
     { id: "interview", label: "Interview Prep", icon: "🎤" },
     { id: "history", label: "History", icon: "🗂️" },
-    { id: "suggestions", label: "Suggestions", icon: "💡" },
-    { id: "optimized", label: "Optimized", icon: "✨" },
+    { id: "suggestions", label: "Get Suggestions", icon: "💡" },
   ];
 
   return (
@@ -168,9 +143,9 @@ export default function Dashboard() {
 
           {/* AI action buttons */}
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-            {!file && (
+            {!file && !canUseTextFallback && (
               <span style={{ fontSize: "0.8rem", color: "var(--warning)", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 99, padding: "4px 12px" }}>
-                ⚠ Re-upload to use AI features
+               
               </span>
             )}
             <button
@@ -178,19 +153,33 @@ export default function Dashboard() {
               onClick={() => navigate("/generate")}
               title="Open Resume Builder"
             >
-         
-              {loadingSuggest ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Loading…</> : "💡 Get Suggestions"}
+              🛠 Generate Resume
             </button>
             <button
-              id="optimize-btn"
-              className="btn btn-success"
-              onClick={handleOptimize}
-              disabled={loadingOptimize || !file}
-              title={!file ? "Re-upload your resume to optimize" : ""}
+              id="suggest-btn"
+              className="btn btn-ghost"
+              onClick={handleSuggest}
+              disabled={loadingSuggest || (!file && !canUseTextFallback)}
+              title={!file && !canUseTextFallback ? "Re-upload your resume to get AI suggestions" : ""}
             >
-              {loadingOptimize ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Optimizing…</> : "🚀 Optimize Resume"}
+              {loadingSuggest ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Loading…</> : "💡 Get Suggestions"}
             </button>
+
           </div>
+
+          {actionError && (
+            <div style={{
+              marginTop: 12,
+              padding: "10px 12px",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid rgba(244,63,94,0.35)",
+              background: "rgba(244,63,94,0.1)",
+              color: "var(--danger)",
+              fontSize: "0.88rem",
+            }}>
+              {actionError}
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -367,7 +356,7 @@ export default function Dashboard() {
         {activeTab === "suggestions" && (
           <div className="card">
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-              <div className="section-title" style={{ margin: 0 }}>💡 AI Improvement Suggestions</div>
+              <div className="section-title" style={{ margin: 0 }}>💡 Get Suggestions</div>
               {suggestMode === "ai" && (
                 <span style={{
                   fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
@@ -402,115 +391,11 @@ export default function Dashboard() {
             ) : (
               <div style={{ textAlign: "center", padding: "40px 0" }}>
                 <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
-                  Click "Get Suggestions" to receive personalized AI tips for your resume.
+                  Get short improvement tips only. This section does not rewrite your full resume.
                 </p>
-                <button className="btn btn-primary" onClick={handleSuggest} disabled={loadingSuggest || !file}>
+                <button className="btn btn-primary" onClick={handleSuggest} disabled={loadingSuggest || (!file && !canUseTextFallback)}>
                   {loadingSuggest ? "Loading…" : "💡 Get Suggestions"}
                 </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ─── JD MATCH TAB ─────────────────────────────────── */}
-        {activeTab === "jd-match" && (
-          <div className="card">
-            <div className="section-title">🎯 Job Description Match</div>
-            <p style={{ color: "var(--text-secondary)", marginBottom: 16, fontSize: "0.9rem" }}>
-              Paste the job description below and see how well your resume matches it.
-            </p>
-
-            <textarea
-              value={jdText}
-              onChange={(e) => setJdText(e.target.value)}
-              placeholder="Paste the full job description here…"
-              rows={8}
-              style={{
-                width: "100%", padding: "14px 16px", borderRadius: "var(--radius-md)",
-                background: "var(--bg-surface)", border: "1px solid var(--border)",
-                color: "var(--text-primary)", fontSize: "0.9rem", lineHeight: 1.65,
-                resize: "vertical", outline: "none", boxSizing: "border-box",
-                fontFamily: "inherit",
-              }}
-            />
-
-            <div style={{ marginTop: 14, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-              <button
-                className="btn btn-primary"
-                onClick={handleJdMatch}
-                disabled={loadingJd || !file || !jdText.trim()}
-                title={!file ? "Re-upload your resume first" : ""}
-              >
-                {loadingJd ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Analysing…</> : "🎯 Analyse Match"}
-              </button>
-              {!file && (
-                <span style={{ fontSize: "0.8rem", color: "var(--warning)" }}>⚠ Re-upload resume to use this feature</span>
-              )}
-            </div>
-
-            {jdResult?.error && (
-              <div style={{ marginTop: 20, padding: "12px 16px", background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.2)", borderRadius: "var(--radius-md)", color: "var(--danger)" }}>
-                {jdResult.error}
-              </div>
-            )}
-
-            {jdResult && !jdResult.error && (
-              <div style={{ marginTop: 28 }}>
-                {/* Match Score */}
-                <div style={{ textAlign: "center", marginBottom: 28 }}>
-                  <div style={{ fontSize: "3.5rem", fontWeight: 900,
-                    background: "linear-gradient(135deg, var(--accent-1), var(--accent-2))",
-                    WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                    {jdResult.match_percent}%
-                  </div>
-                  <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: 12 }}>JD Match Score</div>
-                  <div style={{ width: "100%", height: 12, background: "var(--bg-surface)", borderRadius: 99, border: "1px solid var(--border)", overflow: "hidden" }}>
-                    <div style={{
-                      height: "100%", borderRadius: 99, transition: "width 0.8s ease",
-                      width: `${jdResult.match_percent}%`,
-                      background: jdResult.match_percent >= 70
-                        ? "linear-gradient(90deg, #22d3a4, #10b981)"
-                        : jdResult.match_percent >= 40
-                        ? "linear-gradient(90deg, #f59e0b, #f97316)"
-                        : "linear-gradient(90deg, #f43f5e, #e11d48)",
-                    }} />
-                  </div>
-                  <div style={{ marginTop: 6, fontSize: "0.8rem", fontWeight: 600,
-                    color: jdResult.match_percent >= 70 ? "var(--success)" : jdResult.match_percent >= 40 ? "var(--warning)" : "var(--danger)" }}>
-                    {jdResult.match_percent >= 70 ? "Strong Match 🔥" : jdResult.match_percent >= 40 ? "Moderate Match ⚡" : "Weak Match — Review Missing Skills"}
-                  </div>
-                </div>
-
-                {/* Matched & Missing columns */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                  <div style={{ background: "rgba(34,211,164,0.06)", border: "1px solid rgba(34,211,164,0.18)", borderRadius: "var(--radius-md)", padding: "16px 18px" }}>
-                    <div style={{ fontWeight: 700, marginBottom: 12, color: "var(--success)", fontSize: "0.875rem" }}>✅ Matched Skills ({jdResult.matched_skills.length})</div>
-                    {jdResult.matched_skills.length > 0
-                      ? <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                          {jdResult.matched_skills.map(s => (
-                            <span key={s} style={{ padding: "4px 10px", borderRadius: 99, background: "rgba(34,211,164,0.15)", color: "var(--success)", fontSize: "0.8rem", fontWeight: 600 }}>{s}</span>
-                          ))}
-                        </div>
-                      : <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>No matching skills found.</p>
-                    }
-                  </div>
-
-                  <div style={{ background: "rgba(244,63,94,0.06)", border: "1px solid rgba(244,63,94,0.18)", borderRadius: "var(--radius-md)", padding: "16px 18px" }}>
-                    <div style={{ fontWeight: 700, marginBottom: 12, color: "var(--danger)", fontSize: "0.875rem" }}>❌ Missing Skills ({jdResult.missing_skills.length})</div>
-                    {jdResult.missing_skills.length > 0
-                      ? <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                          {jdResult.missing_skills.map(s => (
-                            <span key={s} style={{ padding: "4px 10px", borderRadius: 99, background: "rgba(244,63,94,0.12)", color: "var(--danger)", fontSize: "0.8rem", fontWeight: 600 }}>{s}</span>
-                          ))}
-                        </div>
-                      : <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Great — no missing skills detected!</p>
-                    }
-                  </div>
-                </div>
-
-                {jdResult.note && (
-                  <p style={{ marginTop: 14, fontSize: "0.8rem", color: "var(--text-secondary)", fontStyle: "italic" }}>{jdResult.note}</p>
-                )}
               </div>
             )}
           </div>
@@ -597,96 +482,6 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
-          </div>
-        )}
-
-        {/* ─── OPTIMIZED TAB ───────────────────────────────── */}
-        {activeTab === "optimized" && (
-          <div className="card">
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-              <div className="section-title" style={{ margin: 0 }}>✨ AI-Optimized Resume</div>
-              {optimizeMode === "ai" && (
-                <span style={{
-                  fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
-                  padding: "3px 10px", borderRadius: 99,
-                  background: optimizeMode === "ai" ? "rgba(34,211,164,0.12)" : "rgba(245,158,11,0.12)",
-                  color: optimizeMode === "ai" ? "var(--success)" : "var(--warning)",
-                  border: `1px solid ${optimizeMode === "ai" ? "rgba(34,211,164,0.3)" : "rgba(245,158,11,0.3)"}`,
-                }}>
-                  ✨ AI Mode
-                </span>
-              )}
-            </div>
-
-            {/* AI mode — full rewritten resume text */}
-            {optimized && optimized.trim().length > 0 ? (
-              <div>
-                <div style={{
-                  background: "var(--bg-surface)", borderRadius: "var(--radius-md)",
-                  padding: "24px", border: "1px solid var(--border)",
-                  whiteSpace: "pre-wrap", lineHeight: 1.8,
-                  fontSize: "0.9rem", color: "var(--text-secondary)",
-                  maxHeight: 600, overflowY: "auto",
-                }}>
-                  {optimized}
-                </div>
-                <div style={{ marginTop: 16, display: "flex", gap: 12 }}>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => navigator.clipboard.writeText(optimized)}
-                  >
-                    📋 Copy to Clipboard
-                  </button>
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => {
-                      const blob = new Blob([optimized], { type: "text/plain" });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `Optimized_${filename.replace(".pdf", "")}.txt`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
-                  >
-                    📥 Download as Text
-                  </button>
-                </div>
-              </div>
-
-            /* Offline mode — show actionable tips */
-            ) : optimizeFallback && optimizeFallback.length > 0 ? (
-              <div>
-                <ol style={{ display: "flex", flexDirection: "column", gap: 14, listStyle: "none" }}>
-                  {optimizeFallback.map((tip, i) => (
-                    <li key={i} style={{
-                      display: "flex", gap: 14, alignItems: "flex-start",
-                      padding: "14px 18px", borderRadius: "var(--radius-md)",
-                      background: "var(--bg-surface)", border: "1px solid var(--border)",
-                    }}>
-                      <div style={{
-                        minWidth: 28, height: 28, borderRadius: "50%",
-                        background: "linear-gradient(135deg, var(--accent-1), var(--accent-2))",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: "0.8rem", fontWeight: 700, color: "#fff",
-                      }}>{i + 1}</div>
-                      <p style={{ fontSize: "0.9rem", lineHeight: 1.65, color: "var(--text-primary)", marginTop: 2 }}>{tip}</p>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-
-            /* Not yet run */
-            ) : optimizeMode == null ? (
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
-                  Let AI rewrite your resume to be more impactful and ATS-friendly.
-                </p>
-                <button className="btn btn-success" onClick={handleOptimize} disabled={loadingOptimize || !file}>
-                  {loadingOptimize ? "Optimizing…" : "🚀 Optimize My Resume"}
-                </button>
-              </div>
-            ) : null}
           </div>
         )}
 

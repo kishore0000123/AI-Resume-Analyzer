@@ -24,6 +24,9 @@ export const suggestImprovements = (file) => {
   });
 };
 
+export const suggestImprovementsFromText = (text, skills = []) =>
+  API.post("/suggest-text", { text, skills });
+
 export const optimizeResume = (file) => {
   const formData = new FormData();
   formData.append("file", file);
@@ -31,6 +34,9 @@ export const optimizeResume = (file) => {
     headers: { "Content-Type": "multipart/form-data" },
   });
 };
+
+export const optimizeResumeFromText = (text, skills = []) =>
+  API.post("/optimize-text", { text, skills });
 
 export const getHistory = (limit = 20) => API.get(`/history?limit=${limit}`);
 
