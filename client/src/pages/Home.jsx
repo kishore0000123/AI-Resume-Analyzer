@@ -53,7 +53,15 @@ export default function Home() {
           </div>
 
           {/* Upload zone */}
-          <UploadZone onFileSelect={setFile} file={file} loading={loading} />
+          <UploadZone
+            onFileSelect={(selected) => {
+              setFile(selected);
+              setError("");
+            }}
+            onValidationError={(msg) => setError(msg)}
+            file={file}
+            loading={loading}
+          />
 
           {/* Error */}
           {error && (

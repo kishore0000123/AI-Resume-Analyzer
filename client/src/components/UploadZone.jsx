@@ -1,19 +1,41 @@
 import { useRef, useState } from "react";
 
-export default function UploadZone({ onFileSelect, file, loading }) {
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+
+function isPdfFile(candidate) {
+  if (!candidate) return false;
+  const byType = candidate.type === "application/pdf";
+  const byName = candidate.name?.toLowerCase().endsWith(".pdf");
+  return Boolean(byType || byName);
+}
+
+export default function UploadZone({ onFileSelect, file, loading, onValidationError }) {
   const inputRef = useRef();
   const [dragging, setDragging] = useState(false);
+
+  const handleIncomingFile = (incoming) => {
+    if (!incoming) return;
+    if (!isPdfFile(incoming)) {
+      onValidationError?.("Only PDF files are supported.");
+      return;
+    }
+    if (incoming.size > MAX_FILE_BYTES) {
+      onValidationError?.("File is too large. Please upload a PDF under 10MB.");
+      return;
+    }
+    onFileSelect(incoming);
+  };
 
   const handleDrop = (e) => {
     e.preventDefault();
     setDragging(false);
     const dropped = e.dataTransfer.files[0];
-    if (dropped?.type === "application/pdf") onFileSelect(dropped);
+    handleIncomingFile(dropped);
   };
 
   const handleChange = (e) => {
     const picked = e.target.files[0];
-    if (picked) onFileSelect(picked);
+    handleIncomingFile(picked);
   };
 
   return (
