@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { getRoleSuggestions } from "../api/client";
 import StepIndicator from "../components/StepIndicator";
 import ResumeForm from "../components/ResumeForm";
 import ResumePreview from "../components/ResumePreview";
@@ -52,10 +51,6 @@ export default function GenerateResume() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [selectedTemplate, setSelectedTemplate] = useState("minimal");
-  const [selectedRole, setSelectedRole] = useState("Frontend Developer");
-  const [roleData, setRoleData] = useState(null);
-  const [loadingRole, setLoadingRole] = useState(false);
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", text: "" });
   const [touched, setTouched] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -79,7 +74,6 @@ export default function GenerateResume() {
   const didInitDraft = useRef(false);
 
   const analysis = useMemo(() => getAnalysisDraft(), []);
-  const roleOptions = ["Frontend Developer", "Backend Developer", "Data Scientist"];
   const requiredFields = ["name", "email", "skills", "summary"];
   const hasAnyContent = useMemo(() => Object.values(form).some((v) => v.trim()), [form]);
 
@@ -110,241 +104,116 @@ export default function GenerateResume() {
     if (initial?.form) {
       setForm((prev) => ({ ...prev, ...initial.form }));
       if (initial.selectedTemplate) setSelectedTemplate(initial.selectedTemplate);
+    } else if (analysis?.text) {
+      const detectedName = parseNameFromText(analysis.text);
+      setForm((prev) => ({
+        ...prev,
+        name: detectedName,
+        skills: (analysis.skills || []).join(", "),
+      }));
     }
+
+    const templateFromUrl = searchParams.get("template");
+    if (templateFromUrl) {
+      const exists = templateOptions.find((t) => t.id === templateFromUrl);
+      if (exists) setSelectedTemplate(templateFromUrl);
+    }
+
     didInitDraft.current = true;
-  }, [location.state]);
+  }, [analysis, location.state, searchParams]);
 
   useEffect(() => {
-    const payload = JSON.stringify({ form, selectedTemplate });
-    sessionStorage.setItem(BUILDER_DRAFT_KEY, payload);
-    localStorage.setItem(BUILDER_DRAFT_KEY, payload);
-  }, [form, selectedTemplate]);
-
-  useEffect(() => {
-    const section = searchParams.get("section");
-    const refMap = {
-      summary: summaryRef,
-      skills: skillsRef,
-      projects: projectsRef,
-      experience: experienceRef,
-      education: educationRef,
-    };
-    const targetRef = refMap[section];
-    if (targetRef?.current) {
-      targetRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-      targetRef.current.focus();
+    if (hasAnyContent) {
+      const timer = setTimeout(() => {
+        const draft = { form, selectedTemplate };
+        sessionStorage.setItem(BUILDER_DRAFT_KEY, JSON.stringify(draft));
+        localStorage.setItem(BUILDER_DRAFT_KEY, JSON.stringify(draft));
+      }, 1000);
+      return () => clearTimeout(timer);
     }
-  }, [searchParams]);
+  }, [form, selectedTemplate, hasAnyContent]);
 
-  useEffect(() => {
-    const roleParam = searchParams.get("role");
-    if (roleParam) setSelectedRole(roleParam);
-  }, [searchParams]);
-
-  useEffect(() => {
-    const fetchRole = async () => {
-      setLoadingRole(true);
-      try {
-        const currentSkills = form.skills
-          .split(",")
-          .map((s) => s.trim().toLowerCase())
-          .filter(Boolean);
-        const { data } = await getRoleSuggestions(selectedRole, currentSkills);
-        setRoleData(data);
-      } catch {
-        setRoleData(null);
-      } finally {
-        setLoadingRole(false);
-      }
-    };
-
-    fetchRole();
-  }, [selectedRole, form.skills]);
-
-  useEffect(() => {
-    if (submitAttempted && hasRequiredMissing) {
-      setSuggestionsOpen(true);
-    }
-  }, [submitAttempted, hasRequiredMissing]);
-
-  const updateField = (field, value) => {
+  const handleInputChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleBlur = (field) => {
-    setTouched((prev) => ({ ...prev, [field]: true }));
+  const handleAutofill = (section, content) => {
+    handleInputChange(section, content);
+    setFeedback({ type: "success", text: `Autofilled ${section}!` });
+    setTimeout(() => setFeedback({ type: "", text: "" }), 3000);
   };
 
-  const showFieldError = (field) => Boolean((touched[field] || submitAttempted) && fieldErrors[field]);
-
-  const validateForm = () => {
+  const validateAndPreview = () => {
     setSubmitAttempted(true);
-    const invalid = requiredFields.filter((field) => fieldErrors[field]);
-    if (invalid.length > 0) {
-      setTouched((prev) => ({
-        ...prev,
-        ...Object.fromEntries(requiredFields.map((f) => [f, true])),
-      }));
-    }
-    return invalid;
-  };
-
-  const autofillFromAnalysis = () => {
-    if (!analysis) {
-      setFeedback({ type: "error", text: "No analysis found. Analyze a resume first." });
+    if (hasRequiredMissing) {
+      const firstErrorField = requiredFields.find((f) => fieldErrors[f]);
+      const refMap = {
+        summary: summaryRef,
+        skills: skillsRef,
+        experience: experienceRef,
+      };
+      refMap[firstErrorField]?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setFeedback({ type: "error", text: "Please fill all required fields correctly." });
       return;
     }
-
-    const skills = (analysis.skills || []).join(", ");
-    const strengths = analysis.score?.strengths?.slice(0, 2).join(" ") || "";
-    const bestRole = analysis.best_role?.role || "";
-    const summary = [
-      bestRole ? `Aspiring ${bestRole} with hands-on project experience.` : "Motivated candidate with practical technical project experience.",
-      strengths,
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    const projectLines = (analysis.job_matches || [])
-      .slice(0, 2)
-      .map((job) => `Built portfolio projects aligned with ${job.role} competencies (${job.match_percent}% match).`)
-      .join("\n");
-
-    setForm((prev) => ({
-      ...prev,
-      name: prev.name || parseNameFromText(analysis.text),
-      skills: prev.skills || skills,
-      summary: prev.summary || summary,
-      projects: prev.projects || projectLines,
-    }));
-
-    setFeedback({ type: "success", text: "Autofill complete. Review fields and continue." });
-  };
-
-  const goToPreview = () => {
-    const invalid = validateForm();
-    if (invalid.length > 0) {
-      setFeedback({ type: "error", text: "Please fix highlighted required fields before preview." });
-      return;
-    }
-
-    setFeedback({ type: "", text: "" });
-    navigate("/preview", {
-      state: {
-        draft: {
-          form,
-          selectedTemplate,
-        },
-      },
-    });
+    const draft = { form, selectedTemplate };
+    sessionStorage.setItem("resume_builder_draft", JSON.stringify(draft));
+    navigate("/preview");
   };
 
   return (
-    <main style={{ padding: "40px 0 80px" }}>
-      <div className="container" style={{ maxWidth: 1240 }}>
-        <div className="card section-fade section-fade-1" style={{ marginBottom: 20 }}>
-          <div className="section-title">🧾 Resume Generator</div>
-          <StepIndicator currentStep={hasAnyContent ? 2 : 1} steps={["Fill Details", "Live Preview", "Download"]} />
-          <p style={{ color: "var(--text-secondary)", marginBottom: 18 }}>
-            Fill the form, then click Live Preview to open preview and download options.
-          </p>
-
-
-          <div className="builder-actions">
-            <button className="btn btn-ghost" onClick={autofillFromAnalysis}>✨ Autofill From Analyzer</button>
-            <button className="btn btn-primary" onClick={goToPreview}>👁 Live Preview</button>
+    <main style={{ padding: "40px 0 100px" }}>
+      <div className="container">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+          <h1 style={{ fontSize: "2rem", fontWeight: 800 }}>🛠 Resume Builder</h1>
+          <div style={{ display: "flex", gap: 12 }}>
+            <button className="btn btn-ghost" onClick={() => navigate("/dashboard")}>← Back to Dashboard</button>
+            <button className="btn btn-primary" onClick={validateAndPreview}>Preview & Download →</button>
           </div>
-
-          {feedback.text && (
-            <div
-              style={{
-                marginTop: 14,
-                padding: "10px 12px",
-                borderRadius: "var(--radius-sm)",
-                border: `1px solid ${feedback.type === "error" ? "rgba(244,63,94,0.35)" : "rgba(34,211,164,0.35)"}`,
-                background: feedback.type === "error" ? "rgba(244,63,94,0.1)" : "rgba(34,211,164,0.1)",
-                color: feedback.type === "error" ? "var(--danger)" : "var(--success)",
-                fontSize: "0.9rem",
-              }}
-            >
-              {feedback.text}
-            </div>
-          )}
         </div>
 
-        <div className="generate-layout">
-          <div className="card section-fade section-fade-2" style={{ marginBottom: 20 }}>
-            <div className="section-title">✍️ Resume Form</div>
+        <StepIndicator currentStep={2} />
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 32, alignItems: "start" }}>
+          <div className="card">
+            <div style={{ marginBottom: 24 }}>
+              <div className="section-title">🎨 Choose Template</div>
+              <div style={{ display: "flex", gap: 10 }}>
+                {templateOptions.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTemplate(t.id)}
+                    className={`btn ${selectedTemplate === t.id ? "btn-primary" : "btn-ghost"}`}
+                    style={{ flex: 1, fontSize: "0.85rem" }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <ResumeForm
               form={form}
-              updateField={updateField}
-              handleBlur={handleBlur}
-              showFieldError={showFieldError}
-              fieldErrors={fieldErrors}
+              onChange={handleInputChange}
+              onAutofill={handleAutofill}
+              analysis={analysis}
+              errors={submitAttempted ? fieldErrors : {}}
               refs={{ summaryRef, skillsRef, projectsRef, experienceRef, educationRef }}
             />
+
+            {feedback.text && (
+              <div style={{ marginTop: 20, padding: "12px 16px", borderRadius: "var(--radius-sm)", background: feedback.type === "success" ? "rgba(34,211,164,0.1)" : "rgba(244,63,94,0.1)", border: `1px solid ${feedback.type === "success" ? "var(--success)" : "var(--danger)"}`, color: feedback.type === "success" ? "var(--success)" : "var(--danger)", fontSize: "0.9rem" }}>
+                {feedback.text}
+              </div>
+            )}
           </div>
 
-          <div className="preview-sticky">
-            <div className="card section-fade section-fade-3" style={{ marginBottom: 20 }}>
-              <div className="section-title">👀 Live Preview</div>
-              {hasAnyContent ? (
-                <ResumePreview form={form} selectedTemplate={selectedTemplate} previewId="generate-live-preview" />
-              ) : (
-                <p style={{ color: "var(--text-muted)" }}>Start typing in the form to see live preview.</p>
-              )}
+          <div style={{ position: "sticky", top: 40 }}>
+            <div className="section-title">📄 Live Preview</div>
+            <div className="preview-container" style={{ maxHeight: "calc(100vh - 160px)", overflowY: "auto", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "#fff", boxShadow: "var(--shadow-lg)" }}>
+              <ResumePreview data={form} template={selectedTemplate} />
             </div>
           </div>
-        </div>
-
-        <div className="card section-fade section-fade-4" style={{ marginBottom: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div className="section-title">🎯 Role Suggestions</div>
-            <button className="btn btn-ghost" onClick={() => setSuggestionsOpen((v) => !v)}>
-              {suggestionsOpen ? "Hide Suggestions" : "Show Suggestions"}
-            </button>
-          </div>
-
-          <div className={`suggestions-collapse ${suggestionsOpen ? "open" : ""}`}>
-            <div className="suggestions-collapse-inner">
-              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
-                <select
-                  id="target-role"
-                  name="targetRole"
-                  className="resume-input"
-                  style={{ maxWidth: 260 }}
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                >
-                  {roleOptions.map((r) => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-
-              {loadingRole ? (
-                <p style={{ color: "var(--text-muted)" }}>Loading suggestions...</p>
-              ) : roleData ? (
-                <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.7 }}>
-                  <p><strong style={{ color: "var(--text-primary)" }}>Missing Skills:</strong> {roleData.missing_skills.join(", ") || "None"}</p>
-                  <p><strong style={{ color: "var(--text-primary)" }}>Project Ideas:</strong></p>
-                  <ul style={{ paddingLeft: 18 }}>
-                    {roleData.project_ideas.map((idea) => <li key={idea}>{idea}</li>)}
-                  </ul>
-                </div>
-              ) : (
-                <p style={{ color: "var(--text-muted)" }}>Role suggestions unavailable.</p>
-              )}
-
-              <div className="resume-side-note">
-                <strong>Tip:</strong> Keep summary and skills role-specific. Use measurable outcomes in projects.
-              </div>
-            </div>
-          </div>
-
-          {!suggestionsOpen && (
-            <p style={{ color: "var(--text-secondary)", marginTop: 2 }}>
-              Suggestions are available when you need missing skills and project ideas.
-            </p>
-          )}
         </div>
       </div>
     </main>

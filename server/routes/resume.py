@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
-from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db, jd_match
+from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db
 import datetime
 
 router = APIRouter()
@@ -11,15 +11,12 @@ LOW_TEXT_ERROR = (
     "or run OCR first."
 )
 
+class ChatRequest(BaseModel):
+    question: str
+
 class ResumeTextRequest(BaseModel):
     text: str
     skills: list[str] = []
-
-class JDTextRequest(BaseModel):
-    resume_text: str
-    jd_text: str
-    skills: list[str] = []
-
 
 @router.get("/")
 def home():
@@ -85,7 +82,6 @@ async def analyze_resume(file: UploadFile = File(...)):
             record.pop("text", None)  # Don't store full text
             db["resumes"].insert_one(record)
         except Exception as e:
-            # Keep API response successful, but make persistence problems visible in logs.
             print(f"MongoDB insert failed: {e}")
 
     return result
@@ -187,3 +183,15 @@ def get_history(limit: int = 20):
         raise HTTPException(status_code=500, detail=f"Failed to fetch history: {e}")
 
 
+@router.post("/chat")
+def chat_with_bot(payload: ChatRequest):
+    """Mentor bot endpoint for frontend chat UI."""
+    question = (payload.question or "").strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is required")
+
+    from services import get_chat_reply
+    try:
+        return get_chat_reply(question)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate bot reply: {e}")
