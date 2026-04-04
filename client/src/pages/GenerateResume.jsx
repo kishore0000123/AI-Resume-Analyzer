@@ -301,6 +301,8 @@ export default function GenerateResume() {
             <div className="suggestions-collapse-inner">
               <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
                 <select
+                  id="target-role"
+                  name="targetRole"
                   className="resume-input"
                   style={{ maxWidth: 260 }}
                   value={selectedRole}

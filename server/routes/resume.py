@@ -5,6 +5,12 @@ import datetime
 
 router = APIRouter()
 
+LOW_TEXT_ERROR = (
+    "Could not extract readable text from this PDF. "
+    "It may be a scanned or image-only PDF. Please upload a text-based PDF "
+    "or run OCR first."
+)
+
 
 class ChatRequest(BaseModel):
     question: str
@@ -17,6 +23,12 @@ class RoleSuggestionRequest(BaseModel):
 
 class ResumeTextRequest(BaseModel):
     text: str
+    skills: list[str] = []
+
+
+class JDTextRequest(BaseModel):
+    resume_text: str
+    jd_text: str
     skills: list[str] = []
 
 
@@ -38,7 +50,7 @@ async def upload_resume(file: UploadFile = File(...)):
         raise HTTPException(status_code=422, detail=str(e))
 
     if not text or len(text.strip()) < 50:
-        raise HTTPException(status_code=422, detail="Could not extract readable text from the PDF.")
+        raise HTTPException(status_code=422, detail=LOW_TEXT_ERROR)
 
     return {"filename": file.filename, "text": text, "word_count": len(text.split())}
 
@@ -60,7 +72,7 @@ async def analyze_resume(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Failed to analyze resume: {e}")
 
     if not text or len(text.strip()) < 50:
-        raise HTTPException(status_code=422, detail="Could not extract readable text from the PDF.")
+        raise HTTPException(status_code=422, detail=LOW_TEXT_ERROR)
 
     skills = extract_skills(text)
     score_data = score_resume(text, skills)
@@ -83,8 +95,9 @@ async def analyze_resume(file: UploadFile = File(...)):
             record = {**result, "created_at": datetime.datetime.utcnow()}
             record.pop("text", None)  # Don't store full text
             db["resumes"].insert_one(record)
-        except Exception:
-            pass  # Non-critical — don't fail request if DB save fails
+        except Exception as e:
+            # Keep API response successful, but make persistence problems visible in logs.
+            print(f"MongoDB insert failed: {e}")
 
     return result
 
@@ -112,6 +125,7 @@ async def suggest_improvements(file: UploadFile = File(...)):
     return {
         "suggestions": suggestions,
         "score": score_data["total"],
+        "score_breakdown": score_data.get("breakdown", {}),
         "skills_count": len(skills),
     }
 
@@ -151,6 +165,7 @@ def suggest_improvements_from_text(payload: ResumeTextRequest):
     return {
         "suggestions": suggestions,
         "score": score_data["total"],
+        "score_breakdown": score_data.get("breakdown", {}),
         "skills_count": len(skills),
     }
 
@@ -234,11 +249,26 @@ async def jd_match_endpoint(
         raise HTTPException(status_code=500, detail=f"Failed to read resume: {e}")
 
     if not text or len(text.strip()) < 50:
-        raise HTTPException(status_code=422, detail="Could not extract readable text from the PDF.")
+        raise HTTPException(status_code=422, detail=LOW_TEXT_ERROR)
 
     skills = extract_skills(text)
     result = jd_match(text, jd_text, skills)
     return result
+
+
+@router.post("/jd-match-text")
+def jd_match_text_endpoint(payload: JDTextRequest):
+    """Compare cached resume text against a pasted job description."""
+    resume_text = (payload.resume_text or "").strip()
+    jd_text = (payload.jd_text or "").strip()
+
+    if len(resume_text) < 50:
+        raise HTTPException(status_code=400, detail="Resume text is too short.")
+    if len(jd_text) < 20:
+        raise HTTPException(status_code=400, detail="Job description is too short.")
+
+    skills = payload.skills or extract_skills(resume_text)
+    return jd_match(resume_text, jd_text, skills)
 
 
 @router.post("/interview-questions")
@@ -256,7 +286,7 @@ async def interview_questions_endpoint(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Failed to read resume: {e}")
 
     if not text or len(text.strip()) < 50:
-        raise HTTPException(status_code=422, detail="Could not extract readable text from the PDF.")
+        raise HTTPException(status_code=422, detail=LOW_TEXT_ERROR)
 
     skills = extract_skills(text)
     job_matches = match_jobs(skills)
