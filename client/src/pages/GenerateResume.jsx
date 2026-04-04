@@ -119,6 +119,20 @@ export default function GenerateResume() {
       if (exists) setSelectedTemplate(templateFromUrl);
     }
 
+    const section = searchParams.get("section");
+    const refMap = {
+      summary: summaryRef,
+      skills: skillsRef,
+      projects: projectsRef,
+      experience: experienceRef,
+      education: educationRef,
+    };
+    const targetRef = refMap[section];
+    if (targetRef?.current) {
+      targetRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      targetRef.current.focus();
+    }
+
     didInitDraft.current = true;
   }, [analysis, location.state, searchParams]);
 
