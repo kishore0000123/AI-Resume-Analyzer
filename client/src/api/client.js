@@ -54,6 +54,13 @@ export const jdMatch = (file, jdText) => {
   });
 };
 
+export const jdMatchFromText = (resumeText, jdText, skills = []) =>
+  API.post("/jd-match-text", {
+    resume_text: resumeText,
+    jd_text: jdText,
+    skills,
+  });
+
 export const generateInterviewQuestions = (file) => {
   const formData = new FormData();
   formData.append("file", file);

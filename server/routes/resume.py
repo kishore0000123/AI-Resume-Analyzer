@@ -26,6 +26,12 @@ class ResumeTextRequest(BaseModel):
     skills: list[str] = []
 
 
+class JDTextRequest(BaseModel):
+    resume_text: str
+    jd_text: str
+    skills: list[str] = []
+
+
 @router.get("/")
 def home():
     return {"message": "AI Resume Analyzer API is running"}
@@ -119,6 +125,7 @@ async def suggest_improvements(file: UploadFile = File(...)):
     return {
         "suggestions": suggestions,
         "score": score_data["total"],
+        "score_breakdown": score_data.get("breakdown", {}),
         "skills_count": len(skills),
     }
 
@@ -158,6 +165,7 @@ def suggest_improvements_from_text(payload: ResumeTextRequest):
     return {
         "suggestions": suggestions,
         "score": score_data["total"],
+        "score_breakdown": score_data.get("breakdown", {}),
         "skills_count": len(skills),
     }
 
@@ -246,6 +254,21 @@ async def jd_match_endpoint(
     skills = extract_skills(text)
     result = jd_match(text, jd_text, skills)
     return result
+
+
+@router.post("/jd-match-text")
+def jd_match_text_endpoint(payload: JDTextRequest):
+    """Compare cached resume text against a pasted job description."""
+    resume_text = (payload.resume_text or "").strip()
+    jd_text = (payload.jd_text or "").strip()
+
+    if len(resume_text) < 50:
+        raise HTTPException(status_code=400, detail="Resume text is too short.")
+    if len(jd_text) < 20:
+        raise HTTPException(status_code=400, detail="Job description is too short.")
+
+    skills = payload.skills or extract_skills(resume_text)
+    return jd_match(resume_text, jd_text, skills)
 
 
 @router.post("/interview-questions")
