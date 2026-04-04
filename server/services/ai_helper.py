@@ -72,6 +72,32 @@ def _get_basic_suggestions(skills: list) -> list[str]:
     return suggestions[:7]
 
 
+def _categorize_suggestions(suggestions: list[str]) -> dict:
+    """Group suggestions into resume sections for better UX rendering."""
+    grouped = {
+        "skills": [],
+        "projects": [],
+        "experience": [],
+        "ats": [],
+        "general": [],
+    }
+
+    for item in suggestions:
+        text = (item or "").lower()
+        if any(k in text for k in ["skill", "react", "node", "python", "docker", "database", "framework"]):
+            grouped["skills"].append(item)
+        elif any(k in text for k in ["project", "portfolio", "case study"]):
+            grouped["projects"].append(item)
+        elif any(k in text for k in ["achievement", "experience", "action verb", "quantif", "impact"]):
+            grouped["experience"].append(item)
+        elif any(k in text for k in ["ats", "keyword", "job description", "format"]):
+            grouped["ats"].append(item)
+        else:
+            grouped["general"].append(item)
+
+    return grouped
+
+
 def get_suggestions(text: str, skills: list, score: float) -> dict:
     """
     Returns actionable improvement tips with a mode flag.
@@ -87,9 +113,21 @@ def get_suggestions(text: str, skills: list, score: float) -> dict:
     if result and not result.startswith("ERROR:"):
         lines = [l.strip() for l in result.split("\n") if l.strip()]
         suggestions = [l.lstrip("0123456789.-) ") for l in lines if l]
-        return {"suggestions": suggestions[:6], "mode": "ai"}
+        final_suggestions = suggestions[:6]
+        return {
+            "suggestions": final_suggestions,
+            "sections": _categorize_suggestions(final_suggestions),
+            "quick_wins": final_suggestions[:3],
+            "mode": "ai",
+        }
 
-    return {"suggestions": _get_basic_suggestions(skills), "mode": "offline"}
+    fallback = _get_basic_suggestions(skills)
+    return {
+        "suggestions": fallback,
+        "sections": _categorize_suggestions(fallback),
+        "quick_wins": fallback[:3],
+        "mode": "offline",
+    }
 
 
 def optimize_resume(text: str, skills: list = None) -> dict:
