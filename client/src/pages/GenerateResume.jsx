@@ -5,6 +5,8 @@ import StepIndicator from "../components/StepIndicator";
 import ResumeForm from "../components/ResumeForm";
 import ResumePreview from "../components/ResumePreview";
 
+const BUILDER_DRAFT_KEY = "resume_builder_draft";
+
 function parseNameFromText(text) {
   if (!text) return "";
   const lines = text
@@ -31,7 +33,7 @@ function getAnalysisDraft() {
 
 function getSavedBuilderDraft() {
   try {
-    const raw = sessionStorage.getItem("resume_builder_draft");
+    const raw = sessionStorage.getItem(BUILDER_DRAFT_KEY) || localStorage.getItem(BUILDER_DRAFT_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -74,6 +76,7 @@ export default function GenerateResume() {
   const projectsRef = useRef(null);
   const experienceRef = useRef(null);
   const educationRef = useRef(null);
+  const didInitDraft = useRef(false);
 
   const analysis = useMemo(() => getAnalysisDraft(), []);
   const roleOptions = ["Frontend Developer", "Backend Developer", "Data Scientist"];
@@ -99,6 +102,8 @@ export default function GenerateResume() {
   );
 
   useEffect(() => {
+    if (didInitDraft.current) return;
+
     const draftFromNav = location.state?.draft;
     const savedDraft = getSavedBuilderDraft();
     const initial = draftFromNav || savedDraft;
@@ -106,10 +111,13 @@ export default function GenerateResume() {
       setForm((prev) => ({ ...prev, ...initial.form }));
       if (initial.selectedTemplate) setSelectedTemplate(initial.selectedTemplate);
     }
+    didInitDraft.current = true;
   }, [location.state]);
 
   useEffect(() => {
-    sessionStorage.setItem("resume_builder_draft", JSON.stringify({ form, selectedTemplate }));
+    const payload = JSON.stringify({ form, selectedTemplate });
+    sessionStorage.setItem(BUILDER_DRAFT_KEY, payload);
+    localStorage.setItem(BUILDER_DRAFT_KEY, payload);
   }, [form, selectedTemplate]);
 
   useEffect(() => {

@@ -71,13 +71,6 @@ export default function Dashboard() {
   const { skills, score, job_matches, filename } = result;
   const bestRole = result.best_role;
   const canUseTextFallback = Boolean(result?.text && result.text.trim().length >= 50);
-  const breakdownMax = {
-    skills: 30,
-    sections: 25,
-    length: 20,
-    keyword_density: 15,
-    achievements: 10,
-  };
 
   const handleOpenTab = async (tabId) => {
     setActiveTab(tabId);
@@ -232,20 +225,20 @@ export default function Dashboard() {
   return (
     <main style={{ padding: "40px 0 80px" }}>
       <div className="container">
-
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40, flexWrap: "wrap", gap: 16 }}>
-          <div>
-            <button className="btn btn-ghost" style={{ marginBottom: 16, fontSize: "0.85rem" }} onClick={() => navigate("/")}>
-              ← Upload Another
-            </button>
-            <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", fontWeight: 800 }}>
-              Analysis for <span className="gradient-text">{filename}</span>
-            </h1>
-            <p style={{ color: "var(--text-secondary)", marginTop: 6 }}>
-              {skills.length} skills detected · {score.word_count} words
-            </p>
-          </div>
+        <div className="dashboard-shell">
+          <div className="dashboard-main">
+            {/* Hero */}
+            <section className="dashboard-hero card">
+              <div className="dashboard-hero-top">
+                <div>
+                  <div className="dashboard-eyebrow">ATS Resume Analyzer</div>
+                  <h1 className="dashboard-title">
+                    Analysis for <span className="gradient-text">{filename}</span>
+                  </h1>
+                  <p className="dashboard-subtitle">
+                    Professional resume insights, job matching, and AI rewrite tools in one place.
+                  </p>
+                </div>
 
           {/* AI action buttons */}
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
@@ -270,52 +263,43 @@ export default function Dashboard() {
             >
               {loadingSuggest ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Loading…</> : "💡 Get Suggestions"}
             </button>
-            <button
-              className="btn btn-ghost"
-              onClick={handleOptimize}
-              disabled={loadingOptimize || (!file && !canUseTextFallback)}
-              title={!file && !canUseTextFallback ? "Re-upload your resume to optimize it" : ""}
-            >
-              {loadingOptimize ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Optimizing…</> : "✍️ Fix My Resume"}
-            </button>
 
           </div>
-
-          {actionError && (
-            <div style={{
-              marginTop: 12,
-              padding: "10px 12px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid rgba(244,63,94,0.35)",
-              background: "rgba(244,63,94,0.1)",
-              color: "var(--danger)",
-              fontSize: "0.88rem",
-            }}>
-              {actionError}
             </div>
-          )}
-        </div>
 
-        {/* Tabs */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 32, overflowX: "auto", paddingBottom: 4 }}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => handleOpenTab(tab.id)}
-              className={`btn ${activeTab === tab.id ? "btn-primary" : "btn-ghost"}`}
-              style={{ padding: "8px 18px", fontSize: "0.875rem", whiteSpace: "nowrap" }}
-            >
-              {tab.icon} {tab.label}
-            </button>
-          ))}
-        </div>
+              <div className="dashboard-hero-footer">
+                <span className="status-pill status-pill-info">{skills.length} skills detected</span>
+                <span className="status-pill status-pill-success">{score.word_count} words analyzed</span>
+                <span className="status-pill status-pill-primary">{bestRole?.role || "Role ranking pending"}</span>
+                {!file && !canUseTextFallback && <span className="status-pill status-pill-warning">Re-upload resume to enable AI actions</span>}
+              </div>
 
-        {/* ─── OVERVIEW TAB ─────────────────────────────────── */}
+              {actionError && <div className="alert-box alert-error">{actionError}</div>}
+            </section>
+
+            <div className="tab-strip">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleOpenTab(tab.id)}
+                  className={`btn ${activeTab === tab.id ? "btn-primary" : "btn-ghost"}`}
+                  style={{ padding: "8px 18px", fontSize: "0.875rem", whiteSpace: "nowrap" }}
+                >
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {loadingSuggest && <div className="loading-banner">Analyzing resume suggestions...</div>}
+            {loadingJd && <div className="loading-banner">Matching resume to the job description...</div>}
+            {loadingOptimize && <div className="loading-banner">Generating improved resume content...</div>}
+
+            {/* ─── OVERVIEW TAB ─────────────────────────────────── */}
         {activeTab === "overview" && (
-          <div style={{ display: "grid", gap: 24, gridTemplateColumns: "280px 1fr", alignItems: "start" }}>
+          <div className="overview-grid">
 
             {/* Score card */}
-            <div className="card" style={{ textAlign: "center" }}>
+            <div className="card insight-score-card" style={{ textAlign: "center" }}>
               <div className="section-title" style={{ justifyContent: "center" }}>🎯 Resume Score</div>
               <ScoreGauge score={score.total} />
 
@@ -375,7 +359,7 @@ export default function Dashboard() {
         )}
 
         {/* ─── SKILLS TAB ──────────────────────────────────── */}
-        {activeTab === "skills" && (
+            {activeTab === "skills" && (
           <div className="card">
             <div className="section-title">🧠 Detected Skills ({skills.length})</div>
             {skills.length > 0 ? (
@@ -412,7 +396,7 @@ export default function Dashboard() {
         )}
 
         {/* ─── JOBS TAB ────────────────────────────────────── */}
-        {activeTab === "jobs" && (
+          {activeTab === "jobs" && (
           <div>
             <div style={{ marginBottom: 20, color: "var(--text-secondary)" }}>
               Top job roles ranked by your current resume profile:
@@ -431,205 +415,8 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ─── JD MATCH TAB ────────────────────────────────── */}
-        {activeTab === "jd" && (
-          <div className="card">
-            <div className="section-title">🧩 Resume vs Job Description</div>
-            <p style={{ color: "var(--text-secondary)", marginBottom: 14, fontSize: "0.92rem" }}>
-              Paste a job description to calculate match percentage and missing skills.
-            </p>
-
-            <textarea
-              className="resume-textarea"
-              style={{ minHeight: 180 }}
-              value={jdText}
-              onChange={(e) => setJdText(e.target.value)}
-              placeholder="Paste job description here..."
-            />
-
-            <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
-              <button className="btn btn-primary" onClick={handleJdMatch} disabled={loadingJd || (!file && !canUseTextFallback)}>
-                {loadingJd ? "Matching…" : "Run Match"}
-              </button>
-              <button className="btn btn-ghost" onClick={() => { setJdResult(null); setJdText(""); }}>
-                Clear
-              </button>
-            </div>
-
-            {jdResult && (
-              <div style={{ marginTop: 22, display: "grid", gap: 16 }}>
-                <div style={{
-                  padding: "14px 18px",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid rgba(34,211,164,0.2)",
-                  background: "rgba(34,211,164,0.08)",
-                }}>
-                  <strong style={{ color: "var(--text-primary)", fontSize: "1rem" }}>Match Score: {jdResult.match_percent}%</strong>
-                </div>
-
-                <div>
-                  <div className="section-title" style={{ fontSize: "0.95rem" }}>✅ Matched Skills</div>
-                  {jdResult.matched_skills?.length ? (
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      {jdResult.matched_skills.map((s) => <SkillBadge key={s} skill={s} variant="success" />)}
-                    </div>
-                  ) : (
-                    <p style={{ color: "var(--text-muted)" }}>No strong overlap found.</p>
-                  )}
-                </div>
-
-                <div>
-                  <div className="section-title" style={{ fontSize: "0.95rem" }}>⚠️ Missing Skills</div>
-                  {jdResult.missing_skills?.length ? (
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      {jdResult.missing_skills.map((s) => <SkillBadge key={s} skill={s} variant="warning" />)}
-                    </div>
-                  ) : (
-                    <p style={{ color: "var(--success)" }}>Great fit. No missing skills detected from the JD keywords.</p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ─── FIX TAB ─────────────────────────────────────── */}
-        {activeTab === "fix" && (
-          <div>
-            {/* Header section */}
-            <div className="card" style={{ marginBottom: 24 }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-                <div>
-                  <h2 style={{ fontSize: "1.8rem", fontWeight: 800, marginBottom: 8 }}>✨ Resume Improvement Dashboard</h2>
-                  <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-                    Compare your original resume with AI-enhanced version
-                  </p>
-                </div>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  {optimizeMode === "ai" && (
-                    <span style={{
-                      fontSize: "0.72rem",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                      padding: "5px 12px",
-                      borderRadius: 99,
-                      background: "rgba(34,211,164,0.12)",
-                      color: "var(--success)",
-                      border: "1px solid rgba(34,211,164,0.3)",
-                    }}>
-                      ✨ AI Rewrite
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Main comparison view */}
-            {!optimized ? (
-              <div className="card" style={{ textAlign: "center", padding: "48px 28px" }}>
-                <p style={{ fontSize: "3rem", marginBottom: 16 }}>✍️</p>
-                <p style={{ color: "var(--text-secondary)", marginBottom: 22, fontSize: "1rem" }}>
-                  Generate an improved, ATS-friendly version of your resume content.
-                </p>
-                <button className="btn btn-primary" onClick={handleOptimize} disabled={loadingOptimize || (!file && !canUseTextFallback)}>
-                  {loadingOptimize ? (
-                    <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Optimizing…</>
-                  ) : (
-                    "✍️ Improve My Resume"
-                  )}
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: "grid", gap: 24 }}>
-                {/* Side-by-side comparison */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, alignItems: "start" }}>
-                  {/* Original Resume */}
-                  <div className="card" style={{
-                    border: "1px solid rgba(108,99,255,0.3)",
-                    background: "rgba(108,99,255,0.04)",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                      <span style={{ fontSize: "1.4rem" }}>📄</span>
-                      <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--accent-1)", margin: 0 }}>Original Resume</h3>
-                    </div>
-                    <div style={{
-                      height: "400px",
-                      overflowY: "auto",
-                      padding: "14px",
-                      borderRadius: "var(--radius-md)",
-                      background: "var(--bg-surface)",
-                      border: "1px solid var(--border)",
-                      fontSize: "0.85rem",
-                      lineHeight: 1.6,
-                      color: "var(--text-secondary)",
-                      fontFamily: "monospace",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                    }}>
-                      {result?.text || "No resume text available"}
-                    </div>
-                  </div>
-
-                  {/* Improved Resume */}
-                  <div className="card" style={{
-                    border: "1px solid rgba(34,211,164,0.3)",
-                    background: "rgba(34,211,164,0.04)",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                      <span style={{ fontSize: "1.4rem" }}>✨</span>
-                      <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--success)", margin: 0 }}>Improved Resume</h3>
-                    </div>
-                    <div style={{
-                      height: "400px",
-                      overflowY: "auto",
-                      padding: "14px",
-                      borderRadius: "var(--radius-md)",
-                      background: "var(--bg-surface)",
-                      border: "1px solid var(--border)",
-                      fontSize: "0.85rem",
-                      lineHeight: 1.6,
-                      color: "var(--text-primary)",
-                      fontFamily: "monospace",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                    }}>
-                      {optimized || "Processing..."}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action buttons */}
-                <div className="card" style={{ display: "grid", gap: 12 }}>
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                    <button
-                      className="btn btn-primary"
-                      onClick={handleOptimize}
-                      disabled={loadingOptimize || (!file && !canUseTextFallback)}
-                      style={{ flex: "1 1 auto", minWidth: 160 }}
-                    >
-                      {loadingOptimize ? "Regenerating…" : "🔄 Regenerate"}
-                    </button>
-                    <button
-                      className="btn btn-success"
-                      onClick={handleDownloadOptimized}
-                      disabled={!optimized}
-                      style={{ flex: "1 1 auto", minWidth: 160 }}
-                    >
-                      ⬇ Download (.txt)
-                    </button>
-                  </div>
-                  <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: 0 }}>
-                    💡 Tip: Copy the improved version and use it as a template for your resume builder, or download as text file.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* ─── HISTORY TAB ─────────────────────────────────── */}
-        {activeTab === "history" && (
+          {activeTab === "history" && (
           <div className="card">
             <div className="section-title">🗂️ Analysis History</div>
             {loadingHistory ? (
@@ -666,7 +453,7 @@ export default function Dashboard() {
         )}
 
         {/* ─── SUGGESTIONS TAB ─────────────────────────────── */}
-        {activeTab === "suggestions" && (
+          {activeTab === "suggestions" && (
           <div className="card">
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
               <div className="section-title" style={{ margin: 0 }}>💡 Get Suggestions</div>
@@ -753,9 +540,19 @@ export default function Dashboard() {
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
               <div className="section-title" style={{ margin: 0 }}>🎤 Interview Prep</div>
               {interviewData?.mode === "ai" && (
-                <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
-                  padding: "3px 10px", borderRadius: 99, background: "rgba(34,211,164,0.12)",
-                  color: "var(--success)", border: "1px solid rgba(34,211,164,0.3)" }}>✨ AI Mode</span>
+                <span style={{
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  padding: "3px 10px",
+                  borderRadius: 99,
+                  background: "rgba(34,211,164,0.12)",
+                  color: "var(--success)",
+                  border: "1px solid rgba(34,211,164,0.3)",
+                }}>
+                  ✨ AI Mode
+                </span>
               )}
             </div>
             <p style={{ color: "var(--text-secondary)", marginBottom: 20, fontSize: "0.9rem" }}>
@@ -785,7 +582,6 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* Technical Questions */}
                 <div style={{ marginBottom: 24 }}>
                   <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12, color: "var(--accent-2)" }}>⚙️ Technical Questions</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -803,7 +599,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Behavioral Questions */}
                 <div>
                   <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12, color: "#f59e0b" }}>🤝 Behavioral Questions</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -830,8 +625,53 @@ export default function Dashboard() {
             )}
           </div>
         )}
-
       </div>
-    </main>
+
+      <aside className="insight-rail">
+        <div className="card insight-rail-card">
+          <div className="section-title">🧠 AI Insight Panel</div>
+          <div className="insight-stack">
+            {insightCards.map((item) => (
+              <div key={item.title} className="insight-item">
+                <div className="insight-item-header">
+                  <span className="insight-item-icon">{item.icon}</span>
+                  <span>{item.title}</span>
+                </div>
+                <p className="insight-item-body" style={{ color: item.accent }}>{item.body}</p>
+              </div>
+            ))}
+          </div>
+
+          {suggestions?.length > 0 && (
+            <div className="insight-section">
+              <div className="insight-section-title">Top Suggestions</div>
+              <ul className="insight-list">
+                {suggestions.slice(0, 4).map((s) => <li key={s}>{s}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {topMissingSkills.length > 0 && (
+            <div className="insight-section">
+              <div className="insight-section-title">Skill Gaps</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {topMissingSkills.map((skill) => <SkillBadge key={skill} skill={skill} variant="warning" />)}
+              </div>
+            </div>
+          )}
+
+          <div className="insight-section">
+            <div className="insight-section-title">Action Flow</div>
+            <div className="insight-flow">
+              <span className="status-pill status-pill-primary">1. Upload</span>
+              <span className="status-pill status-pill-success">2. Analyze</span>
+              <span className="status-pill status-pill-info">3. Improve</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
   );
 }
