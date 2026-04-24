@@ -15,9 +15,9 @@ import {
 
 function JobCard({ job, index }) {
   return (
-    <div
-      className="card section-fade"
-      style={{
+    <div 
+      className="card section-fade" 
+      style={{ 
         animationDelay: `${index * 0.1}s`,
         border: "1px solid var(--border)",
         background: "var(--bg-surface)",
@@ -26,20 +26,20 @@ function JobCard({ job, index }) {
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
         <div style={{ fontSize: "1.5rem" }}>{job.icon || "💼"}</div>
-        <div style={{
-          fontSize: "0.75rem",
-          fontWeight: 700,
-          padding: "4px 10px",
-          borderRadius: 99,
-          background: "rgba(108,99,255,0.1)",
-          color: "var(--accent-1)"
+        <div style={{ 
+          fontSize: "0.75rem", 
+          fontWeight: 700, 
+          padding: "4px 10px", 
+          borderRadius: 99, 
+          background: "rgba(108,99,255,0.1)", 
+          color: "var(--accent-1)" 
         }}>
           {job.match_percent}% Match
         </div>
       </div>
       <h3 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 4, color: "var(--text-primary)" }}>{job.role}</h3>
       <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: 16 }}>{job.description}</p>
-
+      
       <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
         <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>
           Key Skills
@@ -72,7 +72,7 @@ export default function Dashboard() {
   const [suggestions, setSuggestions] = useState(null);
   const [suggestSections, setSuggestSections] = useState(null);
   const [quickWins, setQuickWins] = useState([]);
-  const [suggestMode, setSuggestMode] = useState(null);
+  const [suggestMode, setSuggestMode] = useState(null); 
   const [loadingSuggest, setLoadingSuggest] = useState(false);
   const [jdText, setJdText] = useState("");
   const [jdResult, setJdResult] = useState(null);
@@ -101,11 +101,21 @@ export default function Dashboard() {
     );
   }
 
-  const { skills, score, job_matches, filename } = result;
-  const bestRole = result.best_role;
+  // DESTRUCTURE NEW SCORE ARCHITECTURE
+  const { filename, score, skills, job_matches, best_role } = result;
+  const { total, breakdown, missing_skills, weak_sections, suggestions: aiSuggestions } = score;
+
   const canUseTextFallback = Boolean(result?.text && result.text.trim().length >= 50);
   const topJobMatch = job_matches?.[0] || null;
-  const topMissingSkills = topJobMatch?.missing_skills?.slice(0, 4) || [];
+  const topMissingSkills = missing_skills?.slice(0, 4) || [];
+
+  const breakdownMax = {
+    skills: 30,
+    sections: 25,
+    length: 20,
+    keyword_density: 15,
+    achievements: 10
+  };
 
   const handleOpenTab = async (tabId) => {
     setActiveTab(tabId);
@@ -208,52 +218,30 @@ export default function Dashboard() {
     { id: "history", label: "History", icon: "🗂️" },
   ];
 
-  const heroMetricCards = [
-    { label: "Resume Score", value: `${score.total}%`, hint: "Overall ATS health", tone: "primary" },
-    { label: "Detected Skills", value: `${skills.length}`, hint: "Keywords extracted", tone: "info" },
-    { label: "Best Role Fit", value: topJobMatch ? `${topJobMatch.match_percent}%` : "N/A", hint: topJobMatch?.role || "No match yet", tone: "success" },
-    { label: "Word Count", value: `${score.word_count}`, hint: "Content depth", tone: "warning" },
-  ];
-
   return (
     <main style={{ padding: "40px 0 100px" }}>
       <div className="container">
-        {/* Hero Section */}
-        <section className="card" style={{ marginBottom: 32, padding: "32px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32, flexWrap: "wrap", gap: 20 }}>
-            <div>
-              <div style={{ fontSize: "0.85rem", color: "var(--accent-2)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>ATS Resume Analyzer</div>
-              <h1 style={{ fontSize: "clamp(1.8rem, 4vw, 2.5rem)", fontWeight: 900, marginBottom: 8 }}>
-                Analysis for <span className="gradient-text">{filename}</span>
-              </h1>
-              <p style={{ color: "var(--text-secondary)", fontSize: "1.05rem" }}>Professional resume insights and AI-powered improvement tools.</p>
-            </div>
-            <div style={{ display: "flex", gap: 12 }}>
-              <button className="btn btn-ghost" onClick={() => navigate("/")}>← Upload New</button>
-              <button className="btn btn-primary" onClick={() => navigate("/generate")}>🛠 Build Resume</button>
-            </div>
+        {/* Header Section */}
+        <div style={{ marginBottom: 32, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 20 }}>
+          <div>
+            <h1 style={{ fontSize: "clamp(1.8rem, 4vw, 2.5rem)", fontWeight: 900, marginBottom: 8 }}>
+              Analysis for <span className="gradient-text">{filename}</span>
+            </h1>
+            <p style={{ color: "var(--text-secondary)", fontSize: "1.05rem" }}>Detailed breakdown of your resume's performance.</p>
           </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, marginBottom: 24 }}>
-            {heroMetricCards.map((card) => (
-              <div key={card.label} style={{ padding: "20px", borderRadius: "var(--radius-md)", background: "var(--bg-body)", border: "1px solid var(--border)", textAlign: "center" }}>
-                <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: 8 }}>{card.label}</div>
-                <div style={{ fontSize: "1.8rem", fontWeight: 800, color: "var(--text-primary)" }}>{card.value}</div>
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: 4 }}>{card.hint}</div>
-              </div>
-            ))}
+          <div style={{ display: "flex", gap: 12 }}>
+            <button className="btn btn-ghost" onClick={() => navigate("/")}>← Upload New</button>
+            <button className="btn btn-primary" onClick={() => navigate("/generate")}>🛠 Build Resume</button>
           </div>
-
-          {actionError && <div style={{ padding: "12px 16px", borderRadius: "var(--radius-sm)", background: "rgba(244,63,94,0.1)", border: "1px solid var(--danger)", color: "var(--danger)", fontSize: "0.9rem" }}>{actionError}</div>}
-        </section>
+        </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 32, alignItems: "start" }}>
           <div>
             {/* Tab Strip */}
             <div style={{ display: "flex", gap: 8, marginBottom: 24, overflowX: "auto", paddingBottom: 8 }}>
               {tabs.map((tab) => (
-                <button
-                  key={tab.id}
+                <button 
+                  key={tab.id} 
                   className={`btn ${activeTab === tab.id ? "btn-primary" : "btn-ghost"}`}
                   onClick={() => handleOpenTab(tab.id)}
                   style={{ whiteSpace: "nowrap", padding: "10px 20px" }}
@@ -267,30 +255,84 @@ export default function Dashboard() {
             <div className="tab-content">
               {activeTab === "overview" && (
                 <div style={{ display: "grid", gap: 24 }}>
-                  <div className="card" style={{ textAlign: "center", padding: "40px" }}>
-                    <div className="section-title" style={{ justifyContent: "center" }}>🎯 Resume Health Score</div>
-                    <ScoreGauge score={score.total} />
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16, marginTop: 32 }}>
-                      {Object.entries(score.breakdown).map(([key, val]) => (
-                        <div key={key}>
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", textTransform: "capitalize" }}>{key.replace(/_/g, " ")}</div>
-                          <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>{val} pts</div>
-                        </div>
-                      ))}
+                  {/* Score & Progress Panel */}
+                  <div className="card" style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 40, padding: 40, alignItems: "center" }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div className="section-title" style={{ justifyContent: "center", marginBottom: 20 }}>🎯 Overall Score</div>
+                      <ScoreGauge score={total} />
+                    </div>
+                    <div>
+                      <div className="section-title" style={{ marginBottom: 20 }}>📊 Detailed Breakdown</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px 40px" }}>
+                        {Object.entries(breakdown).map(([key, val]) => (
+                          <div key={key}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: "0.85rem" }}>
+                              <span style={{ fontWeight: 600, textTransform: "capitalize" }}>{key.replace(/_/g, " ")}</span>
+                              <span style={{ color: "var(--accent-1)", fontWeight: 700 }}>
+                                {Math.round((val / (breakdownMax[key] || 100)) * 100)}%
+                              </span>
+                            </div>
+                            <div className="progress-bar-track">
+                              <div className="progress-bar-fill" style={{ width: `${(val / (breakdownMax[key] || 100)) * 100}%` }}></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-                    <div className="card">
-                      <div className="section-title">✅ Key Strengths</div>
-                      <ul style={{ listStyle: "none", padding: 0 }}>
-                        {score.strengths.map((s, i) => <li key={i} style={{ marginBottom: 12, fontSize: "0.9rem", display: "flex", gap: 10 }}><span style={{ color: "var(--success)" }}>✓</span> {s}</li>)}
-                      </ul>
+
+                  {/* Explainable Insights */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
+                    {/* Weak Sections */}
+                    <div className="card" style={{ background: "rgba(244,63,94,0.02)" }}>
+                      <h3 style={{ fontSize: "1.1rem", color: "var(--danger)", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span>⚠️</span> Weak Sections
+                      </h3>
+                      {weak_sections && weak_sections.length > 0 ? (
+                        <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+                          {weak_sections.map(sec => (
+                            <li key={sec} style={{ color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem" }}>
+                              <span style={{ color: "var(--danger)" }}>✗</span> Missing or weak {sec}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p style={{ color: "var(--success)", margin: 0, fontSize: "0.9rem" }}>✓ All critical sections are present!</p>
+                      )}
                     </div>
-                    <div className="card">
-                      <div className="section-title">⚠️ Areas for Growth</div>
-                      <ul style={{ listStyle: "none", padding: 0 }}>
-                        {score.weaknesses.map((w, i) => <li key={i} style={{ marginBottom: 12, fontSize: "0.9rem", display: "flex", gap: 10 }}><span style={{ color: "var(--danger)" }}>✗</span> {w}</li>)}
-                      </ul>
+
+                    {/* Missing Skills */}
+                    <div className="card" style={{ background: "rgba(245,158,11,0.02)" }}>
+                      <h3 style={{ fontSize: "1.1rem", color: "var(--warning)", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span>📉</span> Missing Skills
+                      </h3>
+                      {missing_skills && missing_skills.length > 0 ? (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                          {missing_skills.slice(0, 8).map(skill => (
+                            <SkillBadge key={skill} skill={skill} variant="warning" />
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ color: "var(--success)", margin: 0, fontSize: "0.9rem" }}>✓ Strong skill coverage detected.</p>
+                      )}
+                    </div>
+
+                    {/* AI Suggestions */}
+                    <div className="card" style={{ background: "rgba(34,211,164,0.02)" }}>
+                      <h3 style={{ fontSize: "1.1rem", color: "var(--success)", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span>💡</span> Actionable Insights
+                      </h3>
+                      {aiSuggestions && aiSuggestions.length > 0 ? (
+                        <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+                          {aiSuggestions.slice(0, 3).map((sug, i) => (
+                            <li key={i} style={{ color: "var(--text-primary)", display: "flex", alignItems: "flex-start", gap: "8px", lineHeight: 1.5, fontSize: "0.9rem" }}>
+                              <span style={{ color: "var(--success)", marginTop: "2px" }}>✓</span> {sug}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "0.9rem" }}>Resume looks solid.</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -314,9 +356,9 @@ export default function Dashboard() {
               {activeTab === "jd" && (
                 <div className="card">
                   <div className="section-title">🧩 Match Against Job Description</div>
-                  <textarea
-                    className="resume-textarea"
-                    placeholder="Paste the Job Description here..."
+                  <textarea 
+                    className="resume-textarea" 
+                    placeholder="Paste the Job Description here..." 
                     value={jdText}
                     onChange={(e) => setJdText(e.target.value)}
                     style={{ minHeight: 200, marginBottom: 16 }}
@@ -446,7 +488,7 @@ export default function Dashboard() {
                 </div>
                 <div style={{ padding: "12px", background: "rgba(34,211,164,0.05)", borderRadius: "var(--radius-sm)", border: "1px solid rgba(34,211,164,0.1)" }}>
                   <div style={{ fontSize: "0.75rem", fontWeight: 700, marginBottom: 4 }}>TARGETING</div>
-                  <div style={{ color: "var(--success)", fontWeight: 800 }}>{bestRole?.role || "Analyzing..."}</div>
+                  <div style={{ color: "var(--success)", fontWeight: 800 }}>{best_role?.role || "Analyzing..."}</div>
                 </div>
                 <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
                   💡 <strong>Tip:</strong> Improving your word count to 400+ words can increase your ATS score by up to 15%.

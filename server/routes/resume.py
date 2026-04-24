@@ -1,6 +1,16 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
-from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db
+from services import (
+    extract_text_from_bytes, 
+    extract_skills, 
+    score_resume, 
+    match_jobs, 
+    best_role, 
+    get_suggestions, 
+    optimize_resume, 
+    get_db, 
+    jd_match
+)
 import datetime
 
 router = APIRouter()
@@ -16,6 +26,11 @@ class ChatRequest(BaseModel):
 
 class ResumeTextRequest(BaseModel):
     text: str
+    skills: list[str] = []
+
+class JDTextRequest(BaseModel):
+    resume_text: str
+    jd_text: str
     skills: list[str] = []
 
 @router.get("/")
@@ -165,6 +180,19 @@ def optimize_resume_from_text(payload: ResumeTextRequest):
     skills = payload.skills or extract_skills(text)
     optimized = optimize_resume(text, skills)
     return {"original_length": len(text), "optimized": optimized}
+
+
+@router.post("/jd-match")
+def match_against_jd(payload: JDTextRequest):
+    """Match resume against a specific job description."""
+    text = (payload.resume_text or "").strip()
+    jd = (payload.jd_text or "").strip()
+    if len(text) < 50 or len(jd) < 50:
+        raise HTTPException(status_code=400, detail="Resume or JD text is too short.")
+
+    skills = payload.skills or extract_skills(text)
+    match_result = jd_match(text, jd, skills)
+    return match_result
 
 
 @router.get("/history")
