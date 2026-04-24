@@ -1,113 +1,71 @@
-﻿# AI Resume Analyzer
+# AI Resume Analyzer
 
-A full-stack AI-powered resume analysis platform with ATS-style scoring, job-description matching, role recommendations, suggestions, interview prep, and AI resume rewriting.
+A full-stack resume analysis platform with an explainable scoring system. This application allows users to upload their resume (PDF), extracts relevant skills and keywords, and provides a detailed visual breakdown of their score alongside actionable insights.
 
-## Live Project Goals
-- Analyze resumes from PDF uploads
-- Show score breakdown instead of a single flat score
-- Match resume against multiple roles and pasted job descriptions
-- Generate actionable suggestions and AI rewrite output
-- Offer interview question preparation by detected role
-
-## Tech Stack
-- Frontend: React, Vite, Axios
-- Backend: FastAPI, Pydantic, Uvicorn
-- AI/NLP: OpenAI API (with offline fallback rules)
-- Parsing: pdfminer.six
-- Database: MongoDB (optional history persistence)
-
-## Project Structure
-- client: React app and dashboard UI
-- server: FastAPI API and analysis services
-- server/routes: API routes (analyze, suggest, optimize, jd-match, interview)
-- server/services: extraction, analyzer, ai helper, db access
+## Project Goal
+Instead of providing a single arbitrary score, this project aims to answer **"Why this score?"** by analyzing:
+- Overall Section Coverage (Experience, Education, Projects, etc.)
+- Relevant Tech Skills
+- Keyword Density & ATS Readability
+- Formatting & Brevity
 
 ## Key Features
-- Resume upload and parsing (PDF)
-- Skill extraction from a broad technical skill dictionary
-- Resume score breakdown:
-  - Skills
-  - Section coverage
-  - Length quality
-  - Keyword density
-  - Achievements
-- Multi-role matching with ranked fit percentages
-- Resume vs Job Description matching with missing skills
-- Suggestions engine with section-wise tips and quick wins
-- Fix My Resume: AI-enhanced rewrite generation
-- Interview question generation by likely target role
-- Role suggestions in resume builder flow
+- **PDF Parsing**: Robust text extraction from uploaded PDF resumes.
+- **Skill Matching**: Cross-references resume text against a comprehensive tech-skills dictionary.
+- **Explainable Scoring**:
+  - Score Breakdown (Skills, Sections, Keywords, Experience).
+  - Identification of **Weak Sections**.
+  - Highlighting of **Missing Skills**.
+- **Actionable Suggestions**: Rule-based feedback to help candidates improve their resume impact instantly.
 
-## API Endpoints
-- GET /health
-- POST /analyze
-- POST /suggest
-- POST /suggest-text
-- POST /optimize
-- POST /optimize-text
-- POST /jd-match
-- POST /jd-match-text
-- POST /interview-questions
-- POST /role-suggestions
-- GET /history
-- POST /chat
+## Architecture
+
+This project is built with a decoupled frontend and backend:
+- **Frontend (React)**: Clean, dashboard-style UI utilizing Vite and standard CSS. Focused primarily on the upload flow and results visualization.
+- **Backend (FastAPI)**: Lightweight Python backend handling PDF parsing (`pdfminer.six`), skill extraction, and scoring logic.
+
+### Core Structure
+- `/client`: React application (Upload page `Home.jsx`, Results page `Dashboard.jsx`).
+- `/server/main.py`: FastAPI entry point.
+- `/server/routes/resume.py`: API routes for file upload and analysis.
+- `/server/services/analyzer.py`: The core scoring engine and text analysis logic.
 
 ## Local Setup
 
-### 1) Backend
-1. Open terminal in the root folder.
-2. Create and activate virtual environment.
-3. Install dependencies.
-4. Run FastAPI server.
+### 1) Backend Setup
+Open a terminal in the root folder:
 
-Example commands (PowerShell):
-
-```powershell
+```bash
 cd server
 python -m venv .venv
+
+# Activate virtual environment
+# Windows:
 .\.venv\Scripts\Activate.ps1
+# Mac/Linux:
+# source .venv/bin/activate
+
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
+*The backend will run on `http://localhost:8000`*
 
-### 2) Frontend
+### 2) Frontend Setup
 Open another terminal:
 
-```powershell
+```bash
 cd client
 npm install
 npm run dev
 ```
+*The frontend will run on `http://localhost:5173`*
 
-Frontend default URL: http://localhost:5173
-Backend default URL: http://127.0.0.1:8000
-
-## Environment Variables
-Create server/.env:
-
-```env
-OPENAI_API_KEY=your_openai_key
-MONGODB_URI=your_mongodb_uri_optional
-```
-
-Notes:
-- If OPENAI_API_KEY is missing, suggestion and optimize flows fall back to offline mode.
-- MongoDB is optional. If unavailable, analysis still works without history persistence.
-
-## Deployment Targets
-- Frontend: Vercel or Netlify
-- Backend: Render, Railway, or Fly.io
-
-Recommended production checks:
-- Set strict CORS allow_origins to your frontend domain
-- Configure env variables in deployment dashboard
-- Add request size limits and robust error logging
-
-## Suggested Roadmap
-1. Add authenticated user accounts and per-user resume history.
-2. Add export options for improved resume output.
-3. Add benchmark analytics comparing user score against role baselines.
-4. Add test suite for analyzer and route contracts.
+## How to use
+1. Start both servers.
+2. Navigate to `http://localhost:5173` in your browser.
+3. Drag and drop your PDF resume into the upload zone.
+4. Click **"Analyze My Resume"**.
+5. View the detailed dashboard for your score breakdown and actionable insights.
 
 ## License
 MIT

@@ -47,8 +47,7 @@ export default function Home() {
             </h1>
 
             <p style={{ fontSize: "1.1rem", color: "var(--text-secondary)", lineHeight: 1.7, maxWidth: 520, margin: "0 auto" }}>
-              Upload your PDF resume and instantly receive a score, extracted skills,
-              job match percentages, and actionable AI suggestions.
+              Upload your PDF resume and instantly receive a detailed score breakdown, missing skills analysis, and actionable suggestions.
             </p>
           </div>
 
@@ -100,11 +99,10 @@ export default function Home() {
             justifyContent: "center", gap: "12px",
           }}>
             {[
-              { icon: "🎯", label: "Resume Score" },
+              { icon: "🎯", label: "Overall Score" },
               { icon: "🧠", label: "Skill Extraction" },
-              { icon: "💼", label: "Job Matching" },
-              { icon: "💡", label: "AI Suggestions" },
-              { icon: "✍️", label: "Resume Optimizer" },
+              { icon: "📊", label: "Score Breakdown" },
+              { icon: "💡", label: "Actionable Insights" },
             ].map(({ icon, label }) => (
               <div key={label} style={{
                 display: "flex", alignItems: "center", gap: 8,
