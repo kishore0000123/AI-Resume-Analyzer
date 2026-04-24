@@ -155,30 +155,43 @@ def score_resume(text: str, skills: list[str]) -> dict:
     sections = detect_sections(text)
     word_count = len(text.split())
 
-    # 1. Skills breadth (max 30)
-    skill_score = min(len(skills) / 15, 1.0) * 30
+    # 1. Skills (30%)
+    skill_score = min(len(skills) / 15, 1.0) * 100
 
-    # 2. Section coverage (max 25)
+    # 2. Experience (25%)
+    experience_score = 100 if sections["experience"] else 0
+    if sections["projects"] and not sections["experience"]:
+        experience_score = 60
+    elif sections["projects"]:
+        experience_score = min(experience_score + 20, 100)
+
+    # 3. Structure (15%) - based on sections and length
     section_count = sum(sections.values())
-    section_score = (section_count / len(SECTION_PATTERNS)) * 25
-
-    # 3. Resume length – ideal 400–1000 words (max 20)
+    base_structure = (section_count / len(SECTION_PATTERNS)) * 100
     if 400 <= word_count <= 1000:
-        length_score = 20
+        length_penalty = 0
     elif word_count < 400:
-        length_score = (word_count / 400) * 20
+        length_penalty = (400 - word_count) / 400 * 50
     else:
-        length_score = max(20 - ((word_count - 1000) / 200), 10)
+        length_penalty = min((word_count - 1000) / 1000 * 50, 50)
+    structure_score = max(base_structure - length_penalty, 0)
 
-    # 4. Keyword density (max 15)
+    # 4. Keywords (20%)
     keyword_density = len(skills) / max(word_count, 1) * 100
-    kd_score = min(keyword_density / 3, 1.0) * 15
+    keywords_score = min(keyword_density / 3, 1.0) * 100
 
-    # 5. Achievements/extras (max 10)
-    extras_score = 10 if sections["achievements"] else 5
+    # 5. Achievements (10%)
+    achievements_score = 100 if sections["achievements"] else 0
 
-    total = round(skill_score + section_score + length_score + kd_score + extras_score, 1)
-    total = min(total, 100)
+    total = round(
+        skill_score * 0.3 +
+        experience_score * 0.25 +
+        keywords_score * 0.2 +
+        structure_score * 0.15 +
+        achievements_score * 0.1,
+        1
+    )
+    total = min(max(total, 0), 100)
 
     missing_sections = [k for k, v in sections.items() if not v]
     weak_sections = []
@@ -212,11 +225,11 @@ def score_resume(text: str, skills: list[str]) -> dict:
     return {
         "total": total,
         "breakdown": {
-            "skills": round(skill_score, 1),
-            "sections": round(section_score, 1),
-            "length": round(length_score, 1),
-            "keyword_density": round(kd_score, 1),
-            "achievements": extras_score,
+            "skills": round(skill_score * 0.3, 1),
+            "sections": round(experience_score * 0.25, 1),
+            "length": round(structure_score * 0.15, 1),
+            "keyword_density": round(keywords_score * 0.2, 1),
+            "achievements": round(achievements_score * 0.1, 1),
         },
         "sections_found": sections,
         "word_count": word_count,
@@ -270,9 +283,12 @@ def _tokenize_jd(text: str) -> set[str]:
     return {w for w in words if len(w) >= 2 and w not in stopwords}
 
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
 def jd_match(resume_text: str, jd_text: str, resume_skills: list[str]) -> dict:
     """
-    Compare resume against a job description.
+    Compare resume against a job description using TF-IDF Cosine Similarity.
     Returns match_percent, matched_skills, missing_skills, jd_keywords.
     """
     resume_skills_set = {s.lower() for s in resume_skills}
@@ -285,40 +301,36 @@ def jd_match(resume_text: str, jd_text: str, resume_skills: list[str]) -> dict:
         if re.search(pattern, jd_text_lower):
             jd_skills.add(skill)
 
-    # Also grab raw JD keywords for keyword-level overlap
-    jd_keywords = _tokenize_jd(jd_text)
-    resume_keywords = _tokenize_jd(resume_text)
+    # Calculate overall similarity score using TF-IDF
+    try:
+        vectorizer = TfidfVectorizer(stop_words='english')
+        vectors = vectorizer.fit_transform([resume_text, jd_text])
+        similarity = cosine_similarity(vectors[0], vectors[1])[0][0]
+        match_percent = round(similarity * 100, 1)
+    except Exception:
+        # Fallback if empty texts or vectorizer fails
+        match_percent = 0
 
-    if not jd_skills:
-        # Fallback: keyword-level matching when no known skills found in JD
-        if not jd_keywords:
-            return {
-                "match_percent": 0,
-                "matched_skills": [],
-                "missing_skills": [],
-                "jd_keywords": [],
-                "note": "No recognisable skills found in the JD. Try including specific tech keywords.",
-            }
-        common = jd_keywords & resume_keywords
-        pct = round(len(common) / len(jd_keywords) * 100, 1)
+    jd_keywords = _tokenize_jd(jd_text)
+    
+    if not jd_skills and match_percent == 0:
         return {
-            "match_percent": min(pct, 100),
-            "matched_skills": sorted(list(common))[:20],
-            "missing_skills": sorted(list(jd_keywords - resume_keywords))[:20],
-            "jd_keywords": sorted(list(jd_keywords))[:30],
-            "note": "Matched using general keyword overlap (no specific tech skills detected in JD).",
+            "match_percent": 0,
+            "matched_skills": [],
+            "missing_skills": [],
+            "jd_keywords": [],
+            "note": "No recognisable skills found and texts are completely dissimilar.",
         }
 
     matched = sorted(jd_skills & resume_skills_set)
     missing = sorted(jd_skills - resume_skills_set)
-    pct = round(len(matched) / len(jd_skills) * 100, 1) if jd_skills else 0
 
     return {
-        "match_percent": min(pct, 100),
+        "match_percent": match_percent,
         "matched_skills": matched,
         "missing_skills": missing,
-        "jd_keywords": sorted(list(jd_skills)),
-        "note": None,
+        "jd_keywords": sorted(list(jd_skills))[:30],
+        "note": "Matched using TF-IDF cosine similarity." if match_percent > 0 else None,
     }
 
 

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { getRoleSuggestions } from "../api/client";
 import StepIndicator from "../components/StepIndicator";
 import ResumeForm from "../components/ResumeForm";
 import ResumePreview from "../components/ResumePreview";
@@ -52,10 +51,6 @@ export default function GenerateResume() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [selectedTemplate, setSelectedTemplate] = useState("minimal");
-  const [selectedRole, setSelectedRole] = useState("Frontend Developer");
-  const [roleData, setRoleData] = useState(null);
-  const [loadingRole, setLoadingRole] = useState(false);
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", text: "" });
   const [touched, setTouched] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -136,36 +131,6 @@ export default function GenerateResume() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    const roleParam = searchParams.get("role");
-    if (roleParam) setSelectedRole(roleParam);
-  }, [searchParams]);
-
-  useEffect(() => {
-    const fetchRole = async () => {
-      setLoadingRole(true);
-      try {
-        const currentSkills = form.skills
-          .split(",")
-          .map((s) => s.trim().toLowerCase())
-          .filter(Boolean);
-        const { data } = await getRoleSuggestions(selectedRole, currentSkills);
-        setRoleData(data);
-      } catch {
-        setRoleData(null);
-      } finally {
-        setLoadingRole(false);
-      }
-    };
-
-    fetchRole();
-  }, [selectedRole, form.skills]);
-
-  useEffect(() => {
-    if (submitAttempted && hasRequiredMissing) {
-      setSuggestionsOpen(true);
-    }
-  }, [submitAttempted, hasRequiredMissing]);
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -295,56 +260,6 @@ export default function GenerateResume() {
               )}
             </div>
           </div>
-        </div>
-
-        <div className="card section-fade section-fade-4" style={{ marginBottom: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div className="section-title">🎯 Role Suggestions</div>
-            <button className="btn btn-ghost" onClick={() => setSuggestionsOpen((v) => !v)}>
-              {suggestionsOpen ? "Hide Suggestions" : "Show Suggestions"}
-            </button>
-          </div>
-
-          <div className={`suggestions-collapse ${suggestionsOpen ? "open" : ""}`}>
-            <div className="suggestions-collapse-inner">
-              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
-                <select
-                  id="target-role"
-                  name="targetRole"
-                  className="resume-input"
-                  style={{ maxWidth: 260 }}
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                >
-                  {roleOptions.map((r) => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-
-              {loadingRole ? (
-                <p style={{ color: "var(--text-muted)" }}>Loading suggestions...</p>
-              ) : roleData ? (
-                <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.7 }}>
-                  <p><strong style={{ color: "var(--text-primary)" }}>Missing Skills:</strong> {roleData.missing_skills.join(", ") || "None"}</p>
-                  <p><strong style={{ color: "var(--text-primary)" }}>Project Ideas:</strong></p>
-                  <ul style={{ paddingLeft: 18 }}>
-                    {roleData.project_ideas.map((idea) => <li key={idea}>{idea}</li>)}
-                  </ul>
-                </div>
-              ) : (
-                <p style={{ color: "var(--text-muted)" }}>Role suggestions unavailable.</p>
-              )}
-
-              <div className="resume-side-note">
-                <strong>Tip:</strong> Keep summary and skills role-specific. Use measurable outcomes in projects.
-              </div>
-            </div>
-          </div>
-
-          {!suggestionsOpen && (
-            <p style={{ color: "var(--text-secondary)", marginTop: 2 }}>
-              Suggestions are available when you need missing skills and project ideas.
-            </p>
-          )}
         </div>
       </div>
     </main>
