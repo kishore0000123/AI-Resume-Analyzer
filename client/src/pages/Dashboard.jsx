@@ -657,18 +657,18 @@ export default function Dashboard() {
                       <span style={{ color: "var(--success)", marginTop: "2px" }}>✓</span> {sug}
                     </li>
                   ))}
-                </ol>
-              </div>
-            ) : (
-            <div style={{ textAlign: "center", padding: "40px 0" }}>
-              <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
-                Get short improvement tips only. This section does not rewrite your full resume.
-              </p>
-              <button className="btn btn-primary" onClick={handleSuggest} disabled={loadingSuggest || (!file && !canUseTextFallback)}>
-                {loadingSuggest ? "Loading…" : "💡 Get Suggestions"}
-              </button>
+                </ul>
+              ) : (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+                    Get short improvement tips only. This section does not rewrite your full resume.
+                  </p>
+                  <button className="btn btn-primary" onClick={handleSuggest} disabled={loadingSuggest || (!file && !canUseTextFallback)}>
+                    {loadingSuggest ? "Loading…" : "💡 Get Suggestions"}
+                  </button>
+                </div>
+              )}
             </div>
-            )}
           </div>
         )}
 
