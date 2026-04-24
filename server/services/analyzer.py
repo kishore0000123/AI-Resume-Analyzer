@@ -180,40 +180,34 @@ def score_resume(text: str, skills: list[str]) -> dict:
     total = round(skill_score + section_score + length_score + kd_score + extras_score, 1)
     total = min(total, 100)
 
-    strengths = []
-    weaknesses = []
+    missing_sections = [k for k, v in sections.items() if not v]
+    weak_sections = []
+    if "experience" in missing_sections:
+        weak_sections.append("Work Experience")
+    if "projects" in missing_sections:
+        weak_sections.append("Projects")
+    if "education" in missing_sections:
+        weak_sections.append("Education")
 
-    if len(skills) >= 10:
-        strengths.append("Strong technical skill breadth detected")
-    else:
-        weaknesses.append("Add more technical skills to your resume")
+    # Assuming a target role is not known, just general missing skills is hard.
+    # Let's say if they have few skills, we suggest generic common ones.
+    # We will compute "missing_skills" by looking at the top 10 most common skills.
+    common_skills = ["javascript", "python", "react", "sql", "git", "html", "css", "docker", "aws", "node"]
+    missing_skills = [s for s in common_skills if s not in skills][:5]
 
-    if sections["experience"]:
-        strengths.append("Work experience section present")
-    else:
-        weaknesses.append("Missing or unclear work experience section")
+    low_keyword_match = bool(keyword_density < 3.0)
 
-    if sections["projects"]:
-        strengths.append("Projects section adds real-world credibility")
-    else:
-        weaknesses.append("Add a projects section to showcase your work")
-
-    if sections["education"]:
-        strengths.append("Education details are clearly present")
-    else:
-        weaknesses.append("Education details are missing or vague")
-
-    if sections["achievements"]:
-        strengths.append("Certifications / achievements boost credibility")
-    else:
-        weaknesses.append("Add certifications, awards, or achievements")
-
-    if 400 <= word_count <= 1000:
-        strengths.append(f"Good resume length ({word_count} words)")
-    elif word_count < 400:
-        weaknesses.append(f"Resume is too short ({word_count} words) — add more detail")
-    else:
-        weaknesses.append(f"Resume may be too long ({word_count} words) — aim for 1 page")
+    suggestions = []
+    if weak_sections:
+        suggestions.append(f"Add missing sections: {', '.join(weak_sections)}.")
+    if missing_skills:
+        suggestions.append(f"Consider adding common industry skills if you know them: {', '.join(missing_skills)}.")
+    if low_keyword_match:
+        suggestions.append("Your resume has a low keyword density. Add more relevant tech keywords.")
+    if word_count < 400:
+        suggestions.append(f"Resume is too short ({word_count} words). Aim for 400-800 words.")
+    elif word_count > 1000:
+        suggestions.append(f"Resume is very long ({word_count} words). Try to be more concise.")
 
     return {
         "total": total,
@@ -226,8 +220,10 @@ def score_resume(text: str, skills: list[str]) -> dict:
         },
         "sections_found": sections,
         "word_count": word_count,
-        "strengths": strengths,
-        "weaknesses": weaknesses,
+        "missing_skills": missing_skills,
+        "weak_sections": weak_sections,
+        "low_keyword_match": low_keyword_match,
+        "suggestions": suggestions,
     }
 
 

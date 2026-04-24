@@ -1,18 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import ScoreGauge from "../components/ScoreGauge";
-import JobCard from "../components/JobCard";
 import SkillBadge from "../components/SkillBadge";
-import {
-  getHistory,
-  suggestImprovements,
-  suggestImprovementsFromText,
-  optimizeResume,
-  optimizeResumeFromText,
-  jdMatch,
-  jdMatchFromText,
-  generateInterviewQuestions,
-} from "../api/client";
 
 export default function Dashboard() {
   const { state } = useLocation();
@@ -27,33 +16,6 @@ export default function Dashboard() {
     const cached = sessionStorage.getItem("last_analysis");
     return cached ? JSON.parse(cached) : null;
   });
-
-  // Note: the original File object cannot be easily saved to sessionStorage
-  const file = state?.file || null;
-
-  const [suggestions, setSuggestions] = useState(null);
-  const [suggestSections, setSuggestSections] = useState(null);
-  const [quickWins, setQuickWins] = useState([]);
-  const [suggestMode, setSuggestMode] = useState(null); // "ai" | "offline"
-  const [loadingSuggest, setLoadingSuggest] = useState(false);
-
-  const [jdText, setJdText] = useState("");
-  const [jdResult, setJdResult] = useState(null);
-  const [loadingJd, setLoadingJd] = useState(false);
-
-  const [optimized, setOptimized] = useState(null);
-  const [optimizeMode, setOptimizeMode] = useState(null);
-  const [loadingOptimize, setLoadingOptimize] = useState(false);
-
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const [historyItems, setHistoryItems] = useState([]);
-  const [historyMsg, setHistoryMsg] = useState("");
-  const [actionError, setActionError] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
-
-  // Interview Questions state
-  const [interviewData, setInterviewData] = useState(null);
-  const [loadingInterview, setLoadingInterview] = useState(false);
 
   if (!result) {
     return (
@@ -71,6 +33,13 @@ export default function Dashboard() {
   const { skills, score, job_matches, filename } = result;
   const bestRole = result.best_role;
   const canUseTextFallback = Boolean(result?.text && result.text.trim().length >= 50);
+  const breakdownMax = {
+    skills: 30,
+    sections: 25,
+    length: 20,
+    keyword_density: 15,
+    achievements: 10,
+  };
 
   const handleOpenTab = async (tabId) => {
     setActiveTab(tabId);
@@ -156,12 +125,12 @@ export default function Dashboard() {
       const { data } = file
         ? await optimizeResume(file)
         : await optimizeResumeFromText(result.text, skills);
-      
+
       // Backend returns: { optimized: { mode, optimized, suggestions } }
       const optimizeResult = data.optimized;
       let improvedText = "";
       let mode = "offline";
-      
+
       if (typeof optimizeResult === "string") {
         improvedText = optimizeResult;
       } else if (optimizeResult?.optimized) {
@@ -172,7 +141,7 @@ export default function Dashboard() {
         improvedText = (optimizeResult.suggestions || []).join("\n");
         mode = "offline";
       }
-      
+
       console.log("Optimize response:", { raw: optimizeResult, processed: improvedText, mode });
       setOptimized(improvedText || "Unable to generate improvements. Try again.");
       setOptimizeMode(mode);
@@ -225,26 +194,26 @@ export default function Dashboard() {
   return (
     <main style={{ padding: "40px 0 80px" }}>
       <div className="container">
-        <div className="dashboard-shell">
-          <div className="dashboard-main">
-            {/* Hero */}
-            <section className="dashboard-hero card">
-              <div className="dashboard-hero-top">
-                <div>
-                  <div className="dashboard-eyebrow">ATS Resume Analyzer</div>
-                  <h1 className="dashboard-title">
-                    Analysis for <span className="gradient-text">{filename}</span>
-                  </h1>
-                  <p className="dashboard-subtitle">
-                    Professional resume insights, job matching, and AI rewrite tools in one place.
-                  </p>
-                </div>
+
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40, flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <button className="btn btn-ghost" style={{ marginBottom: 16, fontSize: "0.85rem" }} onClick={() => navigate("/")}>
+              ← Upload Another
+            </button>
+            <h1 style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", fontWeight: 800 }}>
+              Analysis for <span className="gradient-text">{filename}</span>
+            </h1>
+            <p style={{ color: "var(--text-secondary)", marginTop: 6 }}>
+              {skills.length} skills detected · {score.word_count} words
+            </p>
+          </div>
 
           {/* AI action buttons */}
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
             {!file && !canUseTextFallback && (
               <span style={{ fontSize: "0.8rem", color: "var(--warning)", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 99, padding: "4px 12px" }}>
-               
+
               </span>
             )}
             <button
@@ -263,43 +232,52 @@ export default function Dashboard() {
             >
               {loadingSuggest ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Loading…</> : "💡 Get Suggestions"}
             </button>
+            <button
+              className="btn btn-ghost"
+              onClick={handleOptimize}
+              disabled={loadingOptimize || (!file && !canUseTextFallback)}
+              title={!file && !canUseTextFallback ? "Re-upload your resume to optimize it" : ""}
+            >
+              {loadingOptimize ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Optimizing…</> : "✍️ Fix My Resume"}
+            </button>
 
           </div>
+
+          {actionError && (
+            <div style={{
+              marginTop: 12,
+              padding: "10px 12px",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid rgba(244,63,94,0.35)",
+              background: "rgba(244,63,94,0.1)",
+              color: "var(--danger)",
+              fontSize: "0.88rem",
+            }}>
+              {actionError}
             </div>
+          )}
+        </div>
 
-              <div className="dashboard-hero-footer">
-                <span className="status-pill status-pill-info">{skills.length} skills detected</span>
-                <span className="status-pill status-pill-success">{score.word_count} words analyzed</span>
-                <span className="status-pill status-pill-primary">{bestRole?.role || "Role ranking pending"}</span>
-                {!file && !canUseTextFallback && <span className="status-pill status-pill-warning">Re-upload resume to enable AI actions</span>}
-              </div>
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 32, overflowX: "auto", paddingBottom: 4 }}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleOpenTab(tab.id)}
+              className={`btn ${activeTab === tab.id ? "btn-primary" : "btn-ghost"}`}
+              style={{ padding: "8px 18px", fontSize: "0.875rem", whiteSpace: "nowrap" }}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
 
-              {actionError && <div className="alert-box alert-error">{actionError}</div>}
-            </section>
-
-            <div className="tab-strip">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => handleOpenTab(tab.id)}
-                  className={`btn ${activeTab === tab.id ? "btn-primary" : "btn-ghost"}`}
-                  style={{ padding: "8px 18px", fontSize: "0.875rem", whiteSpace: "nowrap" }}
-                >
-                  {tab.icon} {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {loadingSuggest && <div className="loading-banner">Analyzing resume suggestions...</div>}
-            {loadingJd && <div className="loading-banner">Matching resume to the job description...</div>}
-            {loadingOptimize && <div className="loading-banner">Generating improved resume content...</div>}
-
-            {/* ─── OVERVIEW TAB ─────────────────────────────────── */}
+        {/* ─── OVERVIEW TAB ─────────────────────────────────── */}
         {activeTab === "overview" && (
-          <div className="overview-grid">
+          <div style={{ display: "grid", gap: 24, gridTemplateColumns: "280px 1fr", alignItems: "start" }}>
 
             {/* Score card */}
-            <div className="card insight-score-card" style={{ textAlign: "center" }}>
+            <div className="card" style={{ textAlign: "center" }}>
               <div className="section-title" style={{ justifyContent: "center" }}>🎯 Resume Score</div>
               <ScoreGauge score={score.total} />
 
@@ -359,7 +337,7 @@ export default function Dashboard() {
         )}
 
         {/* ─── SKILLS TAB ──────────────────────────────────── */}
-            {activeTab === "skills" && (
+        {activeTab === "skills" && (
           <div className="card">
             <div className="section-title">🧠 Detected Skills ({skills.length})</div>
             {skills.length > 0 ? (
@@ -396,7 +374,7 @@ export default function Dashboard() {
         )}
 
         {/* ─── JOBS TAB ────────────────────────────────────── */}
-          {activeTab === "jobs" && (
+        {activeTab === "jobs" && (
           <div>
             <div style={{ marginBottom: 20, color: "var(--text-secondary)" }}>
               Top job roles ranked by your current resume profile:
@@ -415,8 +393,205 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ─── JD MATCH TAB ────────────────────────────────── */}
+        {activeTab === "jd" && (
+          <div className="card">
+            <div className="section-title">🧩 Resume vs Job Description</div>
+            <p style={{ color: "var(--text-secondary)", marginBottom: 14, fontSize: "0.92rem" }}>
+              Paste a job description to calculate match percentage and missing skills.
+            </p>
+
+            <textarea
+              className="resume-textarea"
+              style={{ minHeight: 180 }}
+              value={jdText}
+              onChange={(e) => setJdText(e.target.value)}
+              placeholder="Paste job description here..."
+            />
+
+            <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+              <button className="btn btn-primary" onClick={handleJdMatch} disabled={loadingJd || (!file && !canUseTextFallback)}>
+                {loadingJd ? "Matching…" : "Run Match"}
+              </button>
+              <button className="btn btn-ghost" onClick={() => { setJdResult(null); setJdText(""); }}>
+                Clear
+              </button>
+            </div>
+
+            {jdResult && (
+              <div style={{ marginTop: 22, display: "grid", gap: 16 }}>
+                <div style={{
+                  padding: "14px 18px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid rgba(34,211,164,0.2)",
+                  background: "rgba(34,211,164,0.08)",
+                }}>
+                  <strong style={{ color: "var(--text-primary)", fontSize: "1rem" }}>Match Score: {jdResult.match_percent}%</strong>
+                </div>
+
+                <div>
+                  <div className="section-title" style={{ fontSize: "0.95rem" }}>✅ Matched Skills</div>
+                  {jdResult.matched_skills?.length ? (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {jdResult.matched_skills.map((s) => <SkillBadge key={s} skill={s} variant="success" />)}
+                    </div>
+                  ) : (
+                    <p style={{ color: "var(--text-muted)" }}>No strong overlap found.</p>
+                  )}
+                </div>
+
+                <div>
+                  <div className="section-title" style={{ fontSize: "0.95rem" }}>⚠️ Missing Skills</div>
+                  {jdResult.missing_skills?.length ? (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {jdResult.missing_skills.map((s) => <SkillBadge key={s} skill={s} variant="warning" />)}
+                    </div>
+                  ) : (
+                    <p style={{ color: "var(--success)" }}>Great fit. No missing skills detected from the JD keywords.</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── FIX TAB ─────────────────────────────────────── */}
+        {activeTab === "fix" && (
+          <div>
+            {/* Header section */}
+            <div className="card" style={{ marginBottom: 24 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                <div>
+                  <h2 style={{ fontSize: "1.8rem", fontWeight: 800, marginBottom: 8 }}>✨ Resume Improvement Dashboard</h2>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
+                    Compare your original resume with AI-enhanced version
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {optimizeMode === "ai" && (
+                    <span style={{
+                      fontSize: "0.72rem",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                      padding: "5px 12px",
+                      borderRadius: 99,
+                      background: "rgba(34,211,164,0.12)",
+                      color: "var(--success)",
+                      border: "1px solid rgba(34,211,164,0.3)",
+                    }}>
+                      ✨ AI Rewrite
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Main comparison view */}
+            {!optimized ? (
+              <div className="card" style={{ textAlign: "center", padding: "48px 28px" }}>
+                <p style={{ fontSize: "3rem", marginBottom: 16 }}>✍️</p>
+                <p style={{ color: "var(--text-secondary)", marginBottom: 22, fontSize: "1rem" }}>
+                  Generate an improved, ATS-friendly version of your resume content.
+                </p>
+                <button className="btn btn-primary" onClick={handleOptimize} disabled={loadingOptimize || (!file && !canUseTextFallback)}>
+                  {loadingOptimize ? (
+                    <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Optimizing…</>
+                  ) : (
+                    "✍️ Improve My Resume"
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 24 }}>
+                {/* Side-by-side comparison */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, alignItems: "start" }}>
+                  {/* Original Resume */}
+                  <div className="card" style={{
+                    border: "1px solid rgba(108,99,255,0.3)",
+                    background: "rgba(108,99,255,0.04)",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                      <span style={{ fontSize: "1.4rem" }}>📄</span>
+                      <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--accent-1)", margin: 0 }}>Original Resume</h3>
+                    </div>
+                    <div style={{
+                      height: "400px",
+                      overflowY: "auto",
+                      padding: "14px",
+                      borderRadius: "var(--radius-md)",
+                      background: "var(--bg-surface)",
+                      border: "1px solid var(--border)",
+                      fontSize: "0.85rem",
+                      lineHeight: 1.6,
+                      color: "var(--text-secondary)",
+                      fontFamily: "monospace",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}>
+                      {result?.text || "No resume text available"}
+                    </div>
+                  </div>
+
+                  {/* Improved Resume */}
+                  <div className="card" style={{
+                    border: "1px solid rgba(34,211,164,0.3)",
+                    background: "rgba(34,211,164,0.04)",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                      <span style={{ fontSize: "1.4rem" }}>✨</span>
+                      <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--success)", margin: 0 }}>Improved Resume</h3>
+                    </div>
+                    <div style={{
+                      height: "400px",
+                      overflowY: "auto",
+                      padding: "14px",
+                      borderRadius: "var(--radius-md)",
+                      background: "var(--bg-surface)",
+                      border: "1px solid var(--border)",
+                      fontSize: "0.85rem",
+                      lineHeight: 1.6,
+                      color: "var(--text-primary)",
+                      fontFamily: "monospace",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}>
+                      {optimized || "Processing..."}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="card" style={{ display: "grid", gap: 12 }}>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleOptimize}
+                      disabled={loadingOptimize || (!file && !canUseTextFallback)}
+                      style={{ flex: "1 1 auto", minWidth: 160 }}
+                    >
+                      {loadingOptimize ? "Regenerating…" : "🔄 Regenerate"}
+                    </button>
+                    <button
+                      className="btn btn-success"
+                      onClick={handleDownloadOptimized}
+                      disabled={!optimized}
+                      style={{ flex: "1 1 auto", minWidth: 160 }}
+                    >
+                      ⬇ Download (.txt)
+                    </button>
+                  </div>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: 0 }}>
+                    💡 Tip: Copy the improved version and use it as a template for your resume builder, or download as text file.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ─── HISTORY TAB ─────────────────────────────────── */}
-          {activeTab === "history" && (
+        {activeTab === "history" && (
           <div className="card">
             <div className="section-title">🗂️ Analysis History</div>
             {loadingHistory ? (
@@ -453,7 +628,7 @@ export default function Dashboard() {
         )}
 
         {/* ─── SUGGESTIONS TAB ─────────────────────────────── */}
-          {activeTab === "suggestions" && (
+        {activeTab === "suggestions" && (
           <div className="card">
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
               <div className="section-title" style={{ margin: 0 }}>💡 Get Suggestions</div>
@@ -469,68 +644,31 @@ export default function Dashboard() {
                 </span>
               )}
             </div>
-            {suggestions ? (
-              <div style={{ display: "grid", gap: 16 }}>
-                {quickWins.length > 0 && (
-                  <div style={{
-                    padding: "14px 16px",
-                    borderRadius: "var(--radius-md)",
-                    background: "rgba(56,189,248,0.08)",
-                    border: "1px solid rgba(56,189,248,0.25)",
-                  }}>
-                    <div className="section-title" style={{ fontSize: "0.95rem", marginBottom: 8 }}>⚡ Quick Wins</div>
-                    <ul style={{ paddingLeft: 18, color: "var(--text-primary)", lineHeight: 1.65 }}>
-                      {quickWins.map((tip) => <li key={tip}>{tip}</li>)}
-                    </ul>
-                  </div>
-                )}
 
-                {suggestSections && Object.entries(suggestSections).map(([section, items]) => (
-                  items?.length ? (
-                    <div key={section} style={{
-                      padding: "14px 16px",
-                      borderRadius: "var(--radius-md)",
-                      background: "var(--bg-surface)",
-                      border: "1px solid var(--border)",
-                    }}>
-                      <div style={{ fontSize: "0.9rem", fontWeight: 700, textTransform: "capitalize", marginBottom: 8 }}>
-                        {section.replace(/_/g, " ")}
-                      </div>
-                      <ul style={{ paddingLeft: 18, color: "var(--text-secondary)", lineHeight: 1.65 }}>
-                        {items.map((tip) => <li key={tip}>{tip}</li>)}
-                      </ul>
-                    </div>
-                  ) : null
-                ))}
-
-                <ol style={{ display: "flex", flexDirection: "column", gap: 12, listStyle: "none" }}>
-                  {suggestions.map((s, i) => (
-                    <li key={`${s}-${i}`} style={{
-                      display: "flex", gap: 16, alignItems: "flex-start",
-                      padding: "14px 16px", borderRadius: "var(--radius-md)",
-                      background: "var(--bg-surface)", border: "1px solid var(--border)",
-                    }}>
-                      <div style={{
-                        minWidth: 28, height: 28, borderRadius: "50%",
-                        background: "linear-gradient(135deg, var(--accent-1), var(--accent-2))",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: "0.8rem", fontWeight: 700, color: "#fff",
-                      }}>{i + 1}</div>
-                      <p style={{ fontSize: "0.92rem", lineHeight: 1.6, color: "var(--text-primary)", marginTop: 2 }}>{s}</p>
+            {/* Actionable Suggestions */}
+            <div style={{ background: "rgba(34,211,164,0.05)", border: "1px solid rgba(34,211,164,0.15)", borderRadius: "var(--radius-md)", padding: "20px" }}>
+              <h3 style={{ fontSize: "1.1rem", color: "var(--success)", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <span>💡</span> Actionable Insights
+              </h3>
+              {suggestions && suggestions.length > 0 ? (
+                <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {suggestions.map((sug, i) => (
+                    <li key={i} style={{ color: "var(--text-primary)", display: "flex", alignItems: "flex-start", gap: "8px", lineHeight: 1.5 }}>
+                      <span style={{ color: "var(--success)", marginTop: "2px" }}>✓</span> {sug}
                     </li>
                   ))}
-                </ol>
-              </div>
-            ) : (
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
-                  Get short improvement tips only. This section does not rewrite your full resume.
-                </p>
-                <button className="btn btn-primary" onClick={handleSuggest} disabled={loadingSuggest || (!file && !canUseTextFallback)}>
-                  {loadingSuggest ? "Loading…" : "💡 Get Suggestions"}
-                </button>
-              </div>
-            )}
+                </ul>
+              ) : (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+                    Get short improvement tips only. This section does not rewrite your full resume.
+                  </p>
+                  <button className="btn btn-primary" onClick={handleSuggest} disabled={loadingSuggest || (!file && !canUseTextFallback)}>
+                    {loadingSuggest ? "Loading…" : "💡 Get Suggestions"}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -541,18 +679,10 @@ export default function Dashboard() {
               <div className="section-title" style={{ margin: 0 }}>🎤 Interview Prep</div>
               {interviewData?.mode === "ai" && (
                 <span style={{
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  padding: "3px 10px",
-                  borderRadius: 99,
-                  background: "rgba(34,211,164,0.12)",
-                  color: "var(--success)",
-                  border: "1px solid rgba(34,211,164,0.3)",
-                }}>
-                  ✨ AI Mode
-                </span>
+                  fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
+                  padding: "3px 10px", borderRadius: 99, background: "rgba(34,211,164,0.12)",
+                  color: "var(--success)", border: "1px solid rgba(34,211,164,0.3)"
+                }}>✨ AI Mode</span>
               )}
             </div>
             <p style={{ color: "var(--text-secondary)", marginBottom: 20, fontSize: "0.9rem" }}>
@@ -575,41 +705,53 @@ export default function Dashboard() {
             ) : (
               <div>
                 {interviewData.role && (
-                  <div style={{ marginBottom: 20, padding: "10px 16px", borderRadius: "var(--radius-sm)",
+                  <div style={{
+                    marginBottom: 20, padding: "10px 16px", borderRadius: "var(--radius-sm)",
                     background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)",
-                    color: "var(--text-secondary)", fontSize: "0.875rem" }}>
+                    color: "var(--text-secondary)", fontSize: "0.875rem"
+                  }}>
                     🎯 Questions tailored for: <strong style={{ color: "var(--text-primary)" }}>{interviewData.role}</strong>
                   </div>
                 )}
 
+                {/* Technical Questions */}
                 <div style={{ marginBottom: 24 }}>
                   <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12, color: "var(--accent-2)" }}>⚙️ Technical Questions</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {(interviewData.questions?.technical || []).map((q, i) => (
-                      <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start",
+                      <div key={i} style={{
+                        display: "flex", gap: 14, alignItems: "flex-start",
                         padding: "14px 18px", borderRadius: "var(--radius-md)",
-                        background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-                        <div style={{ minWidth: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                        background: "var(--bg-surface)", border: "1px solid var(--border)"
+                      }}>
+                        <div style={{
+                          minWidth: 28, height: 28, borderRadius: "50%", flexShrink: 0,
                           background: "linear-gradient(135deg, var(--accent-1), var(--accent-2))",
                           display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: "0.8rem", fontWeight: 700, color: "#fff" }}>{i + 1}</div>
+                          fontSize: "0.8rem", fontWeight: 700, color: "#fff"
+                        }}>{i + 1}</div>
                         <p style={{ fontSize: "0.92rem", lineHeight: 1.65, color: "var(--text-primary)", margin: 0, paddingTop: 3 }}>{q}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
+                {/* Behavioral Questions */}
                 <div>
                   <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12, color: "#f59e0b" }}>🤝 Behavioral Questions</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {(interviewData.questions?.behavioral || []).map((q, i) => (
-                      <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start",
+                      <div key={i} style={{
+                        display: "flex", gap: 14, alignItems: "flex-start",
                         padding: "14px 18px", borderRadius: "var(--radius-md)",
-                        background: "var(--bg-surface)", border: "1px solid rgba(245,158,11,0.2)" }}>
-                        <div style={{ minWidth: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                        background: "var(--bg-surface)", border: "1px solid rgba(245,158,11,0.2)"
+                      }}>
+                        <div style={{
+                          minWidth: 28, height: 28, borderRadius: "50%", flexShrink: 0,
                           background: "linear-gradient(135deg, #f59e0b, #f97316)",
                           display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: "0.8rem", fontWeight: 700, color: "#fff" }}>{i + 1}</div>
+                          fontSize: "0.8rem", fontWeight: 700, color: "#fff"
+                        }}>{i + 1}</div>
                         <p style={{ fontSize: "0.92rem", lineHeight: 1.65, color: "var(--text-primary)", margin: 0, paddingTop: 3 }}>{q}</p>
                       </div>
                     ))}
@@ -625,53 +767,8 @@ export default function Dashboard() {
             )}
           </div>
         )}
+
       </div>
-
-      <aside className="insight-rail">
-        <div className="card insight-rail-card">
-          <div className="section-title">🧠 AI Insight Panel</div>
-          <div className="insight-stack">
-            {insightCards.map((item) => (
-              <div key={item.title} className="insight-item">
-                <div className="insight-item-header">
-                  <span className="insight-item-icon">{item.icon}</span>
-                  <span>{item.title}</span>
-                </div>
-                <p className="insight-item-body" style={{ color: item.accent }}>{item.body}</p>
-              </div>
-            ))}
-          </div>
-
-          {suggestions?.length > 0 && (
-            <div className="insight-section">
-              <div className="insight-section-title">Top Suggestions</div>
-              <ul className="insight-list">
-                {suggestions.slice(0, 4).map((s) => <li key={s}>{s}</li>)}
-              </ul>
-            </div>
-          )}
-
-          {topMissingSkills.length > 0 && (
-            <div className="insight-section">
-              <div className="insight-section-title">Skill Gaps</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {topMissingSkills.map((skill) => <SkillBadge key={skill} skill={skill} variant="warning" />)}
-              </div>
-            </div>
-          )}
-
-          <div className="insight-section">
-            <div className="insight-section-title">Action Flow</div>
-            <div className="insight-flow">
-              <span className="status-pill status-pill-primary">1. Upload</span>
-              <span className="status-pill status-pill-success">2. Analyze</span>
-              <span className="status-pill status-pill-info">3. Improve</span>
-            </div>
-          </div>
-        </div>
-      </aside>
-    </div>
-  </div>
-</main>
+    </main>
   );
 }
