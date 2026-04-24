@@ -1,7 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import ScoreGauge from "../components/ScoreGauge";
-import JobCard from "../components/JobCard";
 import SkillBadge from "../components/SkillBadge";
 import {
   getHistory,
@@ -54,7 +53,6 @@ export default function Dashboard() {
   // Interview Questions state
   const [interviewData, setInterviewData] = useState(null);
   const [loadingInterview, setLoadingInterview] = useState(false);
-
   if (!result) {
     return (
       <main style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -163,12 +161,20 @@ export default function Dashboard() {
       const { data } = file
         ? await optimizeResume(file)
         : await optimizeResumeFromText(result.text, skills);
-      
+<<<<<<< HEAD
+
+=======
+
+>>>>>>> 1ca0c0b58c175a2dac5bf2b54ffef007e11009f4
       // Backend returns: { optimized: { mode, optimized, suggestions } }
       const optimizeResult = data.optimized;
       let improvedText = "";
       let mode = "offline";
-      
+<<<<<<< HEAD
+
+=======
+
+>>>>>>> 1ca0c0b58c175a2dac5bf2b54ffef007e11009f4
       if (typeof optimizeResult === "string") {
         improvedText = optimizeResult;
       } else if (optimizeResult?.optimized) {
@@ -179,7 +185,11 @@ export default function Dashboard() {
         improvedText = (optimizeResult.suggestions || []).join("\n");
         mode = "offline";
       }
-      
+<<<<<<< HEAD
+
+=======
+
+>>>>>>> 1ca0c0b58c175a2dac5bf2b54ffef007e11009f4
       console.log("Optimize response:", { raw: optimizeResult, processed: improvedText, mode });
       setOptimized(improvedText || "Unable to generate improvements. Try again.");
       setOptimizeMode(mode);
@@ -251,7 +261,7 @@ export default function Dashboard() {
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
             {!file && !canUseTextFallback && (
               <span style={{ fontSize: "0.8rem", color: "var(--warning)", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 99, padding: "4px 12px" }}>
-               
+
               </span>
             )}
             <button
@@ -682,156 +692,201 @@ export default function Dashboard() {
                 </span>
               )}
             </div>
-            {suggestions ? (
-              <div style={{ display: "grid", gap: 16 }}>
-                {quickWins.length > 0 && (
-                  <div style={{
-                    padding: "14px 16px",
-                    borderRadius: "var(--radius-md)",
-                    background: "rgba(56,189,248,0.08)",
-                    border: "1px solid rgba(56,189,248,0.25)",
-                  }}>
-                    <div className="section-title" style={{ fontSize: "0.95rem", marginBottom: 8 }}>⚡ Quick Wins</div>
-                    <ul style={{ paddingLeft: 18, color: "var(--text-primary)", lineHeight: 1.65 }}>
-                      {quickWins.map((tip) => <li key={tip}>{tip}</li>)}
-                    </ul>
-                  </div>
-                )}
+<<<<<<< HEAD
+  {
+    suggestions ? (
+      <div style={{ display: "grid", gap: 16 }}>
+        {quickWins.length > 0 && (
+          <div style={{
+            padding: "14px 16px",
+            borderRadius: "var(--radius-md)",
+            background: "rgba(56,189,248,0.08)",
+            border: "1px solid rgba(56,189,248,0.25)",
+          }}>
+            <div className="section-title" style={{ fontSize: "0.95rem", marginBottom: 8 }}>⚡ Quick Wins</div>
+            <ul style={{ paddingLeft: 18, color: "var(--text-primary)", lineHeight: 1.65 }}>
+              {quickWins.map((tip) => <li key={tip}>{tip}</li>)}
+            </ul>
+          </div>
+        )}
 
-                {suggestSections && Object.entries(suggestSections).map(([section, items]) => (
-                  items?.length ? (
-                    <div key={section} style={{
-                      padding: "14px 16px",
-                      borderRadius: "var(--radius-md)",
-                      background: "var(--bg-surface)",
-                      border: "1px solid var(--border)",
-                    }}>
-                      <div style={{ fontSize: "0.9rem", fontWeight: 700, textTransform: "capitalize", marginBottom: 8 }}>
-                        {section.replace(/_/g, " ")}
-                      </div>
-                      <ul style={{ paddingLeft: 18, color: "var(--text-secondary)", lineHeight: 1.65 }}>
-                        {items.map((tip) => <li key={tip}>{tip}</li>)}
-                      </ul>
-                    </div>
-                  ) : null
-                ))}
+        {suggestSections && Object.entries(suggestSections).map(([section, items]) => (
+          items?.length ? (
+            <div key={section} style={{
+              padding: "14px 16px",
+              borderRadius: "var(--radius-md)",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border)",
+            }}>
+              <div style={{ fontSize: "0.9rem", fontWeight: 700, textTransform: "capitalize", marginBottom: 8 }}>
+                {section.replace(/_/g, " ")}
+              </div>
+              <ul style={{ paddingLeft: 18, color: "var(--text-secondary)", lineHeight: 1.65 }}>
+                {items.map((tip) => <li key={tip}>{tip}</li>)}
+              </ul>
+            </div>
+          ) : null
+        ))}
 
-                <ol style={{ display: "flex", flexDirection: "column", gap: 12, listStyle: "none" }}>
-                  {suggestions.map((s, i) => (
-                    <li key={`${s}-${i}`} style={{
-                      display: "flex", gap: 16, alignItems: "flex-start",
-                      padding: "14px 16px", borderRadius: "var(--radius-md)",
-                      background: "var(--bg-surface)", border: "1px solid var(--border)",
-                    }}>
-                      <div style={{
-                        minWidth: 28, height: 28, borderRadius: "50%",
-                        background: "linear-gradient(135deg, var(--accent-1), var(--accent-2))",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: "0.8rem", fontWeight: 700, color: "#fff",
-                      }}>{i + 1}</div>
-                      <p style={{ fontSize: "0.92rem", lineHeight: 1.6, color: "var(--text-primary)", marginTop: 2 }}>{s}</p>
+        <ol style={{ display: "flex", flexDirection: "column", gap: 12, listStyle: "none" }}>
+          {suggestions.map((s, i) => (
+            <li key={`${s}-${i}`} style={{
+              display: "flex", gap: 16, alignItems: "flex-start",
+              padding: "14px 16px", borderRadius: "var(--radius-md)",
+              background: "var(--bg-surface)", border: "1px solid var(--border)",
+            }}>
+              <div style={{
+                minWidth: 28, height: 28, borderRadius: "50%",
+                background: "linear-gradient(135deg, var(--accent-1), var(--accent-2))",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "0.8rem", fontWeight: 700, color: "#fff",
+              }}>{i + 1}</div>
+              <p style={{ fontSize: "0.92rem", lineHeight: 1.6, color: "var(--text-primary)", marginTop: 2 }}>{s}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    ) : (
+      <div style={{ textAlign: "center", padding: "40px 0" }}>
+        <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+          Get short improvement tips only. This section does not rewrite your full resume.
+        </p>
+        <button className="btn btn-primary" onClick={handleSuggest} disabled={loadingSuggest || (!file && !canUseTextFallback)}>
+          {loadingSuggest ? "Loading…" : "💡 Get Suggestions"}
+        </button>
+      </div>
+    )
+  }
+=======
+
+            {/* Actionable Suggestions */}
+            <div style={{ background: "rgba(34,211,164,0.05)", border: "1px solid rgba(34,211,164,0.15)", borderRadius: "var(--radius-md)", padding: "20px" }}>
+              <h3 style={{ fontSize: "1.1rem", color: "var(--success)", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <span>💡</span> Actionable Insights
+              </h3>
+              {suggestions && suggestions.length > 0 ? (
+                <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {suggestions.map((sug, i) => (
+                    <li key={i} style={{ color: "var(--text-primary)", display: "flex", alignItems: "flex-start", gap: "8px", lineHeight: 1.5 }}>
+                      <span style={{ color: "var(--success)", marginTop: "2px" }}>✓</span> {sug}
                     </li>
                   ))}
-                </ol>
-              </div>
-            ) : (
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
-                  Get short improvement tips only. This section does not rewrite your full resume.
-                </p>
-                <button className="btn btn-primary" onClick={handleSuggest} disabled={loadingSuggest || (!file && !canUseTextFallback)}>
-                  {loadingSuggest ? "Loading…" : "💡 Get Suggestions"}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ─── INTERVIEW PREP TAB ───────────────────────────── */}
-        {activeTab === "interview" && (
-          <div className="card">
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-              <div className="section-title" style={{ margin: 0 }}>🎤 Interview Prep</div>
-              {interviewData?.mode === "ai" && (
-                <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
-                  padding: "3px 10px", borderRadius: 99, background: "rgba(34,211,164,0.12)",
-                  color: "var(--success)", border: "1px solid rgba(34,211,164,0.3)" }}>✨ AI Mode</span>
-              )}
-            </div>
-            <p style={{ color: "var(--text-secondary)", marginBottom: 20, fontSize: "0.9rem" }}>
-              Get tailored interview questions based on your resume and detected best role.
-            </p>
-
-            {!interviewData ? (
-              <div style={{ textAlign: "center", padding: "32px 0" }}>
-                <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
-                  {!file ? "Re-upload your resume to generate interview questions." : "Click below to generate questions tailored to your background."}
-                </p>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleGenerateInterview}
-                  disabled={loadingInterview || !file}
-                >
-                  {loadingInterview ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Generating…</> : "🎤 Generate Questions"}
-                </button>
-              </div>
-            ) : (
-              <div>
-                {interviewData.role && (
-                  <div style={{ marginBottom: 20, padding: "10px 16px", borderRadius: "var(--radius-sm)",
-                    background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)",
-                    color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-                    🎯 Questions tailored for: <strong style={{ color: "var(--text-primary)" }}>{interviewData.role}</strong>
-                  </div>
-                )}
-
-                {/* Technical Questions */}
-                <div style={{ marginBottom: 24 }}>
-                  <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12, color: "var(--accent-2)" }}>⚙️ Technical Questions</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {(interviewData.questions?.technical || []).map((q, i) => (
-                      <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start",
-                        padding: "14px 18px", borderRadius: "var(--radius-md)",
-                        background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-                        <div style={{ minWidth: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                          background: "linear-gradient(135deg, var(--accent-1), var(--accent-2))",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: "0.8rem", fontWeight: 700, color: "#fff" }}>{i + 1}</div>
-                        <p style={{ fontSize: "0.92rem", lineHeight: 1.65, color: "var(--text-primary)", margin: 0, paddingTop: 3 }}>{q}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Behavioral Questions */}
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12, color: "#f59e0b" }}>🤝 Behavioral Questions</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {(interviewData.questions?.behavioral || []).map((q, i) => (
-                      <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start",
-                        padding: "14px 18px", borderRadius: "var(--radius-md)",
-                        background: "var(--bg-surface)", border: "1px solid rgba(245,158,11,0.2)" }}>
-                        <div style={{ minWidth: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                          background: "linear-gradient(135deg, #f59e0b, #f97316)",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: "0.8rem", fontWeight: 700, color: "#fff" }}>{i + 1}</div>
-                        <p style={{ fontSize: "0.92rem", lineHeight: 1.65, color: "var(--text-primary)", margin: 0, paddingTop: 3 }}>{q}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ marginTop: 20 }}>
-                  <button className="btn btn-ghost" onClick={handleGenerateInterview} disabled={loadingInterview || !file}>
-                    {loadingInterview ? "Regenerating…" : "🔄 Regenerate"}
+                </ul>
+              ) : (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+                    Get short improvement tips only. This section does not rewrite your full resume.
+                  </p>
+                  <button className="btn btn-primary" onClick={handleSuggest} disabled={loadingSuggest || (!file && !canUseTextFallback)}>
+                    {loadingSuggest ? "Loading…" : "💡 Get Suggestions"}
                   </button>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+>>>>>>> 1ca0c0b58c175a2dac5bf2b54ffef007e11009f4
+          </div >
+        )
+}
 
+{/* ─── INTERVIEW PREP TAB ───────────────────────────── */ }
+{
+  activeTab === "interview" && (
+    <div className="card">
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+        <div className="section-title" style={{ margin: 0 }}>🎤 Interview Prep</div>
+        {interviewData?.mode === "ai" && (
+          <span style={{
+            fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
+            padding: "3px 10px", borderRadius: 99, background: "rgba(34,211,164,0.12)",
+            color: "var(--success)", border: "1px solid rgba(34,211,164,0.3)"
+          }}>✨ AI Mode</span>
+        )}
       </div>
-    </main>
+      <p style={{ color: "var(--text-secondary)", marginBottom: 20, fontSize: "0.9rem" }}>
+        Get tailored interview questions based on your resume and detected best role.
+      </p>
+
+      {!interviewData ? (
+        <div style={{ textAlign: "center", padding: "32px 0" }}>
+          <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+            {!file ? "Re-upload your resume to generate interview questions." : "Click below to generate questions tailored to your background."}
+          </p>
+          <button
+            className="btn btn-primary"
+            onClick={handleGenerateInterview}
+            disabled={loadingInterview || !file}
+          >
+            {loadingInterview ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Generating…</> : "🎤 Generate Questions"}
+          </button>
+        </div>
+      ) : (
+        <div>
+          {interviewData.role && (
+            <div style={{
+              marginBottom: 20, padding: "10px 16px", borderRadius: "var(--radius-sm)",
+              background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)",
+              color: "var(--text-secondary)", fontSize: "0.875rem"
+            }}>
+              🎯 Questions tailored for: <strong style={{ color: "var(--text-primary)" }}>{interviewData.role}</strong>
+            </div>
+          )}
+
+          {/* Technical Questions */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12, color: "var(--accent-2)" }}>⚙️ Technical Questions</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {(interviewData.questions?.technical || []).map((q, i) => (
+                <div key={i} style={{
+                  display: "flex", gap: 14, alignItems: "flex-start",
+                  padding: "14px 18px", borderRadius: "var(--radius-md)",
+                  background: "var(--bg-surface)", border: "1px solid var(--border)"
+                }}>
+                  <div style={{
+                    minWidth: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                    background: "linear-gradient(135deg, var(--accent-1), var(--accent-2))",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "0.8rem", fontWeight: 700, color: "#fff"
+                  }}>{i + 1}</div>
+                  <p style={{ fontSize: "0.92rem", lineHeight: 1.65, color: "var(--text-primary)", margin: 0, paddingTop: 3 }}>{q}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Behavioral Questions */}
+          <div>
+            <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12, color: "#f59e0b" }}>🤝 Behavioral Questions</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {(interviewData.questions?.behavioral || []).map((q, i) => (
+                <div key={i} style={{
+                  display: "flex", gap: 14, alignItems: "flex-start",
+                  padding: "14px 18px", borderRadius: "var(--radius-md)",
+                  background: "var(--bg-surface)", border: "1px solid rgba(245,158,11,0.2)"
+                }}>
+                  <div style={{
+                    minWidth: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                    background: "linear-gradient(135deg, #f59e0b, #f97316)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "0.8rem", fontWeight: 700, color: "#fff"
+                  }}>{i + 1}</div>
+                  <p style={{ fontSize: "0.92rem", lineHeight: 1.65, color: "var(--text-primary)", margin: 0, paddingTop: 3 }}>{q}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 20 }}>
+            <button className="btn btn-ghost" onClick={handleGenerateInterview} disabled={loadingInterview || !file}>
+              {loadingInterview ? "Regenerating…" : "🔄 Regenerate"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+      </div >
+    </main >
   );
 }

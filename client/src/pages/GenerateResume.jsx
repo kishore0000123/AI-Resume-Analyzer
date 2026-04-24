@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { getRoleSuggestions } from "../api/client";
 import StepIndicator from "../components/StepIndicator";
 import ResumeForm from "../components/ResumeForm";
 import ResumePreview from "../components/ResumePreview";
+
+const BUILDER_DRAFT_KEY = "resume_builder_draft";
 
 function parseNameFromText(text) {
   if (!text) return "";
@@ -31,7 +32,7 @@ function getAnalysisDraft() {
 
 function getSavedBuilderDraft() {
   try {
-    const raw = sessionStorage.getItem("resume_builder_draft");
+    const raw = sessionStorage.getItem(BUILDER_DRAFT_KEY) || localStorage.getItem(BUILDER_DRAFT_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -39,21 +40,11 @@ function getSavedBuilderDraft() {
   }
 }
 
-const templateOptions = [
-  { id: "minimal", label: "Minimal" },
-  { id: "modern", label: "Modern" },
-  { id: "developer", label: "Developer Style" },
-];
-
 export default function GenerateResume() {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [selectedTemplate, setSelectedTemplate] = useState("minimal");
-  const [selectedRole, setSelectedRole] = useState("Frontend Developer");
-  const [roleData, setRoleData] = useState(null);
-  const [loadingRole, setLoadingRole] = useState(false);
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", text: "" });
   const [touched, setTouched] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -74,9 +65,9 @@ export default function GenerateResume() {
   const projectsRef = useRef(null);
   const experienceRef = useRef(null);
   const educationRef = useRef(null);
+  const didInitDraft = useRef(false);
 
   const analysis = useMemo(() => getAnalysisDraft(), []);
-  const roleOptions = ["Frontend Developer", "Backend Developer", "Data Scientist"];
   const requiredFields = ["name", "email", "skills", "summary"];
   const hasAnyContent = useMemo(() => Object.values(form).some((v) => v.trim()), [form]);
 
@@ -99,6 +90,8 @@ export default function GenerateResume() {
   );
 
   useEffect(() => {
+    if (didInitDraft.current) return;
+
     const draftFromNav = location.state?.draft;
     const savedDraft = getSavedBuilderDraft();
     const initial = draftFromNav || savedDraft;
@@ -106,10 +99,13 @@ export default function GenerateResume() {
       setForm((prev) => ({ ...prev, ...initial.form }));
       if (initial.selectedTemplate) setSelectedTemplate(initial.selectedTemplate);
     }
+    didInitDraft.current = true;
   }, [location.state]);
 
   useEffect(() => {
-    sessionStorage.setItem("resume_builder_draft", JSON.stringify({ form, selectedTemplate }));
+    const payload = JSON.stringify({ form, selectedTemplate });
+    sessionStorage.setItem(BUILDER_DRAFT_KEY, payload);
+    localStorage.setItem(BUILDER_DRAFT_KEY, payload);
   }, [form, selectedTemplate]);
 
   useEffect(() => {
@@ -127,37 +123,6 @@ export default function GenerateResume() {
       targetRef.current.focus();
     }
   }, [searchParams]);
-
-  useEffect(() => {
-    const roleParam = searchParams.get("role");
-    if (roleParam) setSelectedRole(roleParam);
-  }, [searchParams]);
-
-  useEffect(() => {
-    const fetchRole = async () => {
-      setLoadingRole(true);
-      try {
-        const currentSkills = form.skills
-          .split(",")
-          .map((s) => s.trim().toLowerCase())
-          .filter(Boolean);
-        const { data } = await getRoleSuggestions(selectedRole, currentSkills);
-        setRoleData(data);
-      } catch {
-        setRoleData(null);
-      } finally {
-        setLoadingRole(false);
-      }
-    };
-
-    fetchRole();
-  }, [selectedRole, form.skills]);
-
-  useEffect(() => {
-    if (submitAttempted && hasRequiredMissing) {
-      setSuggestionsOpen(true);
-    }
-  }, [submitAttempted, hasRequiredMissing]);
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -287,56 +252,6 @@ export default function GenerateResume() {
               )}
             </div>
           </div>
-        </div>
-
-        <div className="card section-fade section-fade-4" style={{ marginBottom: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div className="section-title">🎯 Role Suggestions</div>
-            <button className="btn btn-ghost" onClick={() => setSuggestionsOpen((v) => !v)}>
-              {suggestionsOpen ? "Hide Suggestions" : "Show Suggestions"}
-            </button>
-          </div>
-
-          <div className={`suggestions-collapse ${suggestionsOpen ? "open" : ""}`}>
-            <div className="suggestions-collapse-inner">
-              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
-                <select
-                  id="target-role"
-                  name="targetRole"
-                  className="resume-input"
-                  style={{ maxWidth: 260 }}
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                >
-                  {roleOptions.map((r) => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-
-              {loadingRole ? (
-                <p style={{ color: "var(--text-muted)" }}>Loading suggestions...</p>
-              ) : roleData ? (
-                <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.7 }}>
-                  <p><strong style={{ color: "var(--text-primary)" }}>Missing Skills:</strong> {roleData.missing_skills.join(", ") || "None"}</p>
-                  <p><strong style={{ color: "var(--text-primary)" }}>Project Ideas:</strong></p>
-                  <ul style={{ paddingLeft: 18 }}>
-                    {roleData.project_ideas.map((idea) => <li key={idea}>{idea}</li>)}
-                  </ul>
-                </div>
-              ) : (
-                <p style={{ color: "var(--text-muted)" }}>Role suggestions unavailable.</p>
-              )}
-
-              <div className="resume-side-note">
-                <strong>Tip:</strong> Keep summary and skills role-specific. Use measurable outcomes in projects.
-              </div>
-            </div>
-          </div>
-
-          {!suggestionsOpen && (
-            <p style={{ color: "var(--text-secondary)", marginTop: 2 }}>
-              Suggestions are available when you need missing skills and project ideas.
-            </p>
-          )}
         </div>
       </div>
     </main>
