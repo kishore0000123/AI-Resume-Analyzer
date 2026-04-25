@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
+<<<<<<< HEAD
 from services import (
     extract_text_from_bytes, 
     extract_skills, 
@@ -11,6 +12,9 @@ from services import (
     get_db, 
     jd_match
 )
+=======
+from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db, jd_match, generate_interview_questions
+>>>>>>> 8bd51f8 (feat: upgrade resume analyzer UI and backend services)
 import datetime
 
 router = APIRouter()
@@ -183,6 +187,7 @@ def optimize_resume_from_text(payload: ResumeTextRequest):
 
 
 @router.post("/jd-match")
+<<<<<<< HEAD
 def match_against_jd(payload: JDTextRequest):
     """Match resume against a specific job description."""
     text = (payload.resume_text or "").strip()
@@ -193,6 +198,66 @@ def match_against_jd(payload: JDTextRequest):
     skills = payload.skills or extract_skills(text)
     match_result = jd_match(text, jd, skills)
     return match_result
+=======
+async def jd_match_endpoint(file: UploadFile = File(...), jd_text: str = Form(...)):
+    """Match resume against job description."""
+    try:
+        if not file.filename.endswith(".pdf"):
+            raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+
+        content = await file.read()
+        text = extract_text_from_bytes(content)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process file: {e}")
+
+    skills = extract_skills(text)
+    result = jd_match(text, jd_text, skills)
+    return result
+
+
+@router.post("/jd-match-text")
+def jd_match_text_endpoint(payload: JDTextRequest):
+    """Match resume text against job description."""
+    resume_text = (payload.resume_text or "").strip()
+    jd_text = (payload.jd_text or "").strip()
+    
+    if len(resume_text) < 50 or len(jd_text) < 20:
+        raise HTTPException(status_code=400, detail="Resume or JD text is too short.")
+
+    skills = payload.skills or extract_skills(resume_text)
+    result = jd_match(resume_text, jd_text, skills)
+    return result
+
+
+@router.post("/interview-questions")
+async def interview_questions_endpoint(file: UploadFile = File(...)):
+    """Generate interview questions based on the resume."""
+    try:
+        if not file.filename.endswith(".pdf"):
+            raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+
+        content = await file.read()
+        text = extract_text_from_bytes(content)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process file: {e}")
+
+    skills = extract_skills(text)
+    job_matches = match_jobs(skills)
+    top_role = best_role(job_matches)
+    role_name = top_role["role"] if top_role else "General"
+
+    result = generate_interview_questions(text, role_name, skills)
+    return result
+
+>>>>>>> 8bd51f8 (feat: upgrade resume analyzer UI and backend services)
 
 
 @router.get("/history")

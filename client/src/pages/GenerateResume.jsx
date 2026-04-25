@@ -136,6 +136,7 @@ export default function GenerateResume() {
     didInitDraft.current = true;
   }, [analysis, location.state, searchParams]);
 
+<<<<<<< HEAD
   useEffect(() => {
     if (hasAnyContent) {
       const timer = setTimeout(() => {
@@ -146,6 +147,8 @@ export default function GenerateResume() {
       return () => clearTimeout(timer);
     }
   }, [form, selectedTemplate, hasAnyContent]);
+=======
+>>>>>>> 8bd51f8 (feat: upgrade resume analyzer UI and backend services)
 
   const handleInputChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));

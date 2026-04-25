@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlignmentType, Document, Packer, Paragraph, TextRun } from "docx";
 import { useLocation, useNavigate } from "react-router-dom";
 import StepIndicator from "../components/StepIndicator";
 import ResumePreview from "../components/ResumePreview";
@@ -67,190 +66,12 @@ function sectionBulletLines(lines, color = "1F2937") {
   );
 }
 
-function buildMinimalDocx(form) {
-  const contact = [form.email, form.phone, form.location].filter(Boolean).join(" | ");
-  const summaryLines = splitLines(form.summary);
-  const skillLines = splitSkills(form.skills);
-  const projectLines = splitLines(form.projects);
-  const experienceLines = splitLines(form.experience);
-  const educationLines = splitLines(form.education);
-
-  const children = [
-    new Paragraph({
-      alignment: AlignmentType.LEFT,
-      spacing: { after: 60 },
-      children: [new TextRun({ text: form.name || "Your Name", bold: true, color: "111827", size: 56 })],
-    }),
-    ...(contact
-      ? [
-          new Paragraph({
-            alignment: AlignmentType.LEFT,
-            spacing: { after: 220 },
-            children: [new TextRun({ text: contact, color: "475569", size: 21 })],
-          }),
-        ]
-      : [new Paragraph({ spacing: { after: 200 }, children: [new TextRun("")] })]),
-  ];
-
-  if (summaryLines.length > 0) {
-    children.push(sectionHeading("PROFESSIONAL SUMMARY", "111827"));
-    children.push(...sectionBodyLines(summaryLines, "1F2937"));
-  }
-
-  if (skillLines.length > 0) {
-    children.push(sectionHeading("SKILLS", "111827"));
-    children.push(...sectionBulletLines(skillLines, "1F2937"));
-  }
-
-  if (projectLines.length > 0) {
-    children.push(sectionHeading("PROJECTS", "111827"));
-    children.push(...sectionBulletLines(projectLines, "1F2937"));
-  }
-
-  if (experienceLines.length > 0) {
-    children.push(sectionHeading("EXPERIENCE", "111827"));
-    children.push(...sectionBodyLines(experienceLines, "1F2937"));
-  }
-
-  if (educationLines.length > 0) {
-    children.push(sectionHeading("EDUCATION", "111827"));
-    children.push(...sectionBodyLines(educationLines, "1F2937"));
-  }
-
-  return new Document({ sections: [{ children }] });
-}
-
-function buildModernDocx(form) {
-  const contact = [form.email, form.phone, form.location].filter(Boolean).join(" | ");
-  const summaryLines = splitLines(form.summary);
-  const skillLines = splitSkills(form.skills);
-  const projectLines = splitLines(form.projects);
-  const experienceLines = splitLines(form.experience);
-  const educationLines = splitLines(form.education);
-
-  const blueHeading = (text) => sectionHeading(text, "1D4ED8");
-
-  const children = [
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 80 },
-      children: [new TextRun({ text: form.name || "Your Name", bold: true, color: "1D4ED8", size: 54 })],
-    }),
-    ...(contact
-      ? [
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 220 },
-            children: [new TextRun({ text: contact, color: "2563EB", size: 21 })],
-          }),
-        ]
-      : [new Paragraph({ spacing: { after: 200 }, children: [new TextRun("")] })]),
-  ];
-
-  if (summaryLines.length > 0) {
-    children.push(blueHeading("PROFILE"));
-    children.push(...sectionBodyLines(summaryLines, "1E3A8A"));
-  }
-
-  if (skillLines.length > 0) {
-    children.push(blueHeading("SKILLS"));
-    children.push(
-      new Paragraph({
-        spacing: { after: 80 },
-        children: [new TextRun({ text: skillLines.join("  •  "), color: "1E40AF", size: 22 })],
-      })
-    );
-  }
-
-  if (projectLines.length > 0) {
-    children.push(blueHeading("PROJECT HIGHLIGHTS"));
-    children.push(...sectionBulletLines(projectLines, "1E3A8A"));
-  }
-
-  if (experienceLines.length > 0) {
-    children.push(blueHeading("EXPERIENCE"));
-    children.push(...sectionBodyLines(experienceLines, "1E3A8A"));
-  }
-
-  if (educationLines.length > 0) {
-    children.push(blueHeading("EDUCATION"));
-    children.push(...sectionBodyLines(educationLines, "1E3A8A"));
-  }
-
-  return new Document({ sections: [{ children }] });
-}
-
-function buildDeveloperDocx(form) {
-  const contact = [form.email, form.phone, form.location].filter(Boolean).join(" | ");
-  const summaryLines = splitLines(form.summary);
-  const skillLines = splitSkills(form.skills);
-  const projectLines = splitLines(form.projects);
-  const experienceLines = splitLines(form.experience);
-  const educationLines = splitLines(form.education);
-
-  const devHeading = (text) =>
-    new Paragraph({
-      spacing: { before: 260, after: 120 },
-      children: [
-        new TextRun({ text: `$ ${text.toLowerCase()}`, bold: true, color: "059669", size: 22, font: "Consolas" }),
-      ],
-    });
-
-  const devLine = (text) =>
-    new Paragraph({
-      spacing: { after: 70 },
-      children: [new TextRun({ text, color: "111827", size: 22, font: "Consolas" })],
-    });
-
-  const children = [
-    new Paragraph({
-      spacing: { after: 40 },
-      children: [new TextRun({ text: form.name || "Your Name", bold: true, color: "065F46", size: 52, font: "Consolas" })],
-    }),
-    ...(contact ? [devLine(`> ${contact}`)] : []),
-    devLine("$ git log --resume --oneline"),
-  ];
-
-  if (summaryLines.length > 0) {
-    children.push(devHeading("about"));
-    summaryLines.forEach((line) => children.push(devLine(line)));
-  }
-
-  if (skillLines.length > 0) {
-    children.push(devHeading("tech-stack"));
-    children.push(devLine(skillLines.map((skill) => `#${skill.replace(/\s+/g, "_")}`).join(" ")));
-  }
-
-  if (projectLines.length > 0) {
-    children.push(devHeading("projects"));
-    projectLines.forEach((line) => children.push(devLine(`▸ ${line}`)));
-  }
-
-  if (experienceLines.length > 0) {
-    children.push(devHeading("experience"));
-    experienceLines.forEach((line) => children.push(devLine(line)));
-  }
-
-  if (educationLines.length > 0) {
-    children.push(devHeading("education"));
-    educationLines.forEach((line) => children.push(devLine(line)));
-  }
-
-  return new Document({ sections: [{ children }] });
-}
-
-function buildDocxByTemplate(form, selectedTemplate) {
-  if (selectedTemplate === "modern") return buildModernDocx(form);
-  if (selectedTemplate === "developer") return buildDeveloperDocx(form);
-  return buildMinimalDocx(form);
-}
 
 export default function PreviewResume() {
   const location = useLocation();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(2);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", text: "" });
 
   const draft = useMemo(() => location.state?.draft || getSavedBuilderDraft(), [location.state]);
@@ -314,29 +135,7 @@ export default function PreviewResume() {
       .finally(() => setIsDownloadingPdf(false));
   };
 
-  const downloadDocx = async () => {
-    setIsDownloadingDocx(true);
-    setCurrentStep(3);
-    try {
-      const doc = buildDocxByTemplate(form, selectedTemplate);
 
-      const blob = await Packer.toBlob(doc);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      const fileLabel = selectedTemplate === "minimal" ? "minimal" : selectedTemplate;
-      link.download = `generated_resume_${fileLabel}.docx`;
-      link.click();
-      URL.revokeObjectURL(url);
-      setFeedback({ type: "success", text: "DOCX downloaded successfully." });
-    } catch {
-      setFeedback({ type: "error", text: "Failed to download DOCX." });
-    } finally {
-      setIsDownloadingDocx(false);
-    }
-  };
-
-  const createNewResume = () => {
     sessionStorage.removeItem("resume_builder_draft");
     navigate("/generate");
   };
@@ -369,9 +168,6 @@ export default function PreviewResume() {
             </button>
             <button className="btn btn-success" onClick={downloadPdf} disabled={isDownloadingPdf}>
               {isDownloadingPdf ? "Downloading..." : "📥 Download PDF"}
-            </button>
-            <button className="btn btn-primary" onClick={downloadDocx} disabled={isDownloadingDocx}>
-              {isDownloadingDocx ? "Downloading..." : "📝 Download DOCX"}
             </button>
             <button className="btn btn-ghost" onClick={createNewResume}>＋ Create New Resume</button>
           </div>

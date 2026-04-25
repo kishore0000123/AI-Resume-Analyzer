@@ -19,17 +19,14 @@ export default function Navbar() {
           <Link to="/dashboard" className={pathname === "/dashboard" ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
             Dashboard
           </Link>
-          <Link to="/generate-resume" className={isGenerateRoute ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
-            Generate Resume
+          <Link to="/generate" className={isGenerateRoute ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
+            ✍️ Generate Resume
           </Link>
           <Link to="/preview" className={isPreviewRoute ? "btn btn-primary" : "btn btn-ghost"} style={{ padding: "8px 18px", fontSize: "0.875rem" }}>
             👁 Live Preview
           </Link>
-
         </div>
       </div>
     </nav>
-
   );
 }
-
