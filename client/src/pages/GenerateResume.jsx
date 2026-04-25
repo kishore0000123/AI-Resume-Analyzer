@@ -40,12 +40,6 @@ function getSavedBuilderDraft() {
   }
 }
 
-const templateOptions = [
-  { id: "minimal", label: "Minimal" },
-  { id: "modern", label: "Modern" },
-  { id: "developer", label: "Developer Style" },
-];
-
 export default function GenerateResume() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -133,12 +127,9 @@ export default function GenerateResume() {
       targetRef.current.focus();
     }
 
-<<<<<<< HEAD
-=======
+
     didInitDraft.current = true;
   }, [analysis, location.state, searchParams]);
-
-<<<<<<< HEAD
   useEffect(() => {
     if (hasAnyContent) {
       const timer = setTimeout(() => {
@@ -149,11 +140,10 @@ export default function GenerateResume() {
       return () => clearTimeout(timer);
     }
   }, [form, selectedTemplate, hasAnyContent]);
-=======
->>>>>>> 8bd51f8 (feat: upgrade resume analyzer UI and backend services)
->>>>>>> temp-save
 
   const handleInputChange = (field, value) => {
+  const updateField = (field, value) => {
+ ef934b221b6e151f23db98c43529244412f521dd
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -238,4 +228,5 @@ export default function GenerateResume() {
       </div>
     </main>
   );
+}
 }

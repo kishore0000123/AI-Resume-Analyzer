@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 <<<<<<< HEAD
+<<<<<<< HEAD
 from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db, jd_match, generate_interview_questions
 =======
 <<<<<<< HEAD
@@ -19,6 +20,9 @@ from services import (
 from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db, jd_match, generate_interview_questions
 >>>>>>> 8bd51f8 (feat: upgrade resume analyzer UI and backend services)
 >>>>>>> temp-save
+=======
+from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db
+>>>>>>> ef934b221b6e151f23db98c43529244412f521dd
 import datetime
 
 router = APIRouter()
@@ -30,20 +34,29 @@ LOW_TEXT_ERROR = (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 class ChatRequest(BaseModel):
     question: str
 
 >>>>>>> temp-save
+=======
+class ChatRequest(BaseModel):
+    question: str
+
+>>>>>>> ef934b221b6e151f23db98c43529244412f521dd
 class ResumeTextRequest(BaseModel):
     text: str
     skills: list[str] = []
 
+<<<<<<< HEAD
 class JDTextRequest(BaseModel):
     resume_text: str
     jd_text: str
     skills: list[str] = []
 
+=======
+>>>>>>> ef934b221b6e151f23db98c43529244412f521dd
 @router.get("/")
 def home():
     return {"message": "AI Resume Analyzer API is running"}
@@ -290,7 +303,10 @@ def get_history(limit: int = 20):
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> ef934b221b6e151f23db98c43529244412f521dd
 @router.post("/chat")
 def chat_with_bot(payload: ChatRequest):
     """Mentor bot endpoint for frontend chat UI."""
@@ -303,4 +319,7 @@ def chat_with_bot(payload: ChatRequest):
         return get_chat_reply(question)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate bot reply: {e}")
+<<<<<<< HEAD
 >>>>>>> temp-save
+=======
+>>>>>>> ef934b221b6e151f23db98c43529244412f521dd

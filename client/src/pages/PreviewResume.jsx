@@ -19,6 +19,7 @@ function getSavedBuilderDraft() {
   }
 }
 
+<<<<<<< HEAD
 function splitLines(value) {
   return (value || "")
     .split("\n")
@@ -67,6 +68,8 @@ function sectionBulletLines(lines, color = "1F2937") {
 }
 
 
+=======
+>>>>>>> ef934b221b6e151f23db98c43529244412f521dd
 export default function PreviewResume() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -118,6 +121,7 @@ export default function PreviewResume() {
     setIsDownloadingPdf(true);
     setCurrentStep(3);
 
+<<<<<<< HEAD
     const html2pdf = (await import("html2pdf.js")).default;
 
     html2pdf()
@@ -136,6 +140,31 @@ export default function PreviewResume() {
   };
 
 
+=======
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      await html2pdf()
+        .set({
+          margin: 8,
+          filename: "generated_resume.pdf",
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(previewEl)
+        .save();
+      
+      setFeedback({ type: "success", text: "PDF downloaded successfully." });
+    } catch (err) {
+      console.error(err);
+      setFeedback({ type: "error", text: "Failed to download PDF." });
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+  const createNewResume = () => {
+>>>>>>> ef934b221b6e151f23db98c43529244412f521dd
     sessionStorage.removeItem("resume_builder_draft");
     navigate("/generate");
   };
@@ -147,7 +176,7 @@ export default function PreviewResume() {
           <div className="section-title">👀 Resume Preview</div>
           <StepIndicator currentStep={currentStep} steps={["Fill Details", "Preview Resume", "Download"]} />
           <p style={{ color: "var(--text-secondary)", marginTop: 12 }}>
-            Review your resume. You can edit or download as PDF/DOCX.
+            Review your resume. You can edit or download as PDF.
           </p>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -188,6 +217,7 @@ export default function PreviewResume() {
             </div>
           )}
         </div>
+
         {/* Template switcher card */}
         <div className="card" style={{ marginBottom: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
