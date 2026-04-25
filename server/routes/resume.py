@@ -1,6 +1,24 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
+<<<<<<< HEAD
 from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db, jd_match, generate_interview_questions
+=======
+<<<<<<< HEAD
+from services import (
+    extract_text_from_bytes, 
+    extract_skills, 
+    score_resume, 
+    match_jobs, 
+    best_role, 
+    get_suggestions, 
+    optimize_resume, 
+    get_db, 
+    jd_match
+)
+=======
+from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db, jd_match, generate_interview_questions
+>>>>>>> 8bd51f8 (feat: upgrade resume analyzer UI and backend services)
+>>>>>>> temp-save
 import datetime
 
 router = APIRouter()
@@ -11,6 +29,12 @@ LOW_TEXT_ERROR = (
     "or run OCR first."
 )
 
+<<<<<<< HEAD
+=======
+class ChatRequest(BaseModel):
+    question: str
+
+>>>>>>> temp-save
 class ResumeTextRequest(BaseModel):
     text: str
     skills: list[str] = []
@@ -19,7 +43,6 @@ class JDTextRequest(BaseModel):
     resume_text: str
     jd_text: str
     skills: list[str] = []
-
 
 @router.get("/")
 def home():
@@ -85,7 +108,6 @@ async def analyze_resume(file: UploadFile = File(...)):
             record.pop("text", None)  # Don't store full text
             db["resumes"].insert_one(record)
         except Exception as e:
-            # Keep API response successful, but make persistence problems visible in logs.
             print(f"MongoDB insert failed: {e}")
 
     return result
@@ -172,6 +194,21 @@ def optimize_resume_from_text(payload: ResumeTextRequest):
 
 
 @router.post("/jd-match")
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+def match_against_jd(payload: JDTextRequest):
+    """Match resume against a specific job description."""
+    text = (payload.resume_text or "").strip()
+    jd = (payload.jd_text or "").strip()
+    if len(text) < 50 or len(jd) < 50:
+        raise HTTPException(status_code=400, detail="Resume or JD text is too short.")
+
+    skills = payload.skills or extract_skills(text)
+    match_result = jd_match(text, jd, skills)
+    return match_result
+=======
+>>>>>>> temp-save
 async def jd_match_endpoint(file: UploadFile = File(...), jd_text: str = Form(...)):
     """Match resume against job description."""
     try:
@@ -230,6 +267,10 @@ async def interview_questions_endpoint(file: UploadFile = File(...)):
     result = generate_interview_questions(text, role_name, skills)
     return result
 
+<<<<<<< HEAD
+=======
+>>>>>>> 8bd51f8 (feat: upgrade resume analyzer UI and backend services)
+>>>>>>> temp-save
 
 
 @router.get("/history")
@@ -248,3 +289,18 @@ def get_history(limit: int = 20):
         raise HTTPException(status_code=500, detail=f"Failed to fetch history: {e}")
 
 
+<<<<<<< HEAD
+=======
+@router.post("/chat")
+def chat_with_bot(payload: ChatRequest):
+    """Mentor bot endpoint for frontend chat UI."""
+    question = (payload.question or "").strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is required")
+
+    from services import get_chat_reply
+    try:
+        return get_chat_reply(question)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate bot reply: {e}")
+>>>>>>> temp-save

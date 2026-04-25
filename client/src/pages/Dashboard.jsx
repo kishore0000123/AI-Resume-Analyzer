@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import ScoreGauge from "../components/ScoreGauge";
 import SkillBadge from "../components/SkillBadge";
+<<<<<<< HEAD
 import JobCard from "../components/JobCard";
 import {
   getHistory,
@@ -13,6 +14,8 @@ import {
   jdMatchFromText,
   generateInterviewQuestions,
 } from "../api/client";
+=======
+>>>>>>> temp-save
 
 export default function Dashboard() {
   const { state } = useLocation();
@@ -28,6 +31,7 @@ export default function Dashboard() {
     return cached ? JSON.parse(cached) : null;
   });
 
+<<<<<<< HEAD
   const file = state?.file || null;
 
   const [suggestions, setSuggestions] = useState(null);
@@ -53,6 +57,8 @@ export default function Dashboard() {
   const [interviewData, setInterviewData] = useState(null);
   const [loadingInterview, setLoadingInterview] = useState(false);
 
+=======
+>>>>>>> temp-save
   if (!result) {
     return (
       <main style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -66,32 +72,40 @@ export default function Dashboard() {
     );
   }
 
-  const { skills, score, job_matches, filename } = result;
-  const bestRole = result.best_role;
+  // DESTRUCTURE NEW SCORE ARCHITECTURE
+  const { filename, score, skills, job_matches, best_role } = result;
+  const { total, breakdown, missing_skills, weak_sections, suggestions: aiSuggestions } = score;
+
   const canUseTextFallback = Boolean(result?.text && result.text.trim().length >= 50);
+<<<<<<< HEAD
+=======
+  const topJobMatch = job_matches?.[0] || null;
+  const topMissingSkills = missing_skills?.slice(0, 4) || [];
+
+>>>>>>> temp-save
   const breakdownMax = {
     skills: 30,
     sections: 25,
     length: 20,
     keyword_density: 15,
+<<<<<<< HEAD
     achievements: 10,
+=======
+    achievements: 10
+>>>>>>> temp-save
   };
 
   const handleOpenTab = async (tabId) => {
     setActiveTab(tabId);
     if (tabId !== "history" || historyItems.length > 0 || loadingHistory) return;
-
     setLoadingHistory(true);
     setHistoryMsg("");
     try {
       const { data } = await getHistory(20);
       setHistoryItems(data.history ?? []);
-      if (data.available === false) {
-        setHistoryMsg(data.message || "History is currently unavailable.");
-      }
+      if (data.available === false) setHistoryMsg(data.message || "History unavailable.");
     } catch (e) {
-      const msg = e?.response?.data?.detail || "Failed to load history.";
-      setHistoryMsg(msg);
+      setHistoryMsg("Failed to load history.");
     } finally {
       setLoadingHistory(false);
     }
@@ -102,50 +116,21 @@ export default function Dashboard() {
       setActionError("Re-upload resume to use this feature.");
       return;
     }
-
     setLoadingSuggest(true);
     setActionError("");
     try {
       const { data } = file
         ? await suggestImprovements(file)
         : await suggestImprovementsFromText(result.text, skills);
-
       setSuggestions(data.suggestions?.suggestions ?? data.suggestions ?? []);
       setSuggestSections(data.suggestions?.sections ?? null);
       setQuickWins(data.suggestions?.quick_wins ?? []);
       setSuggestMode(data.suggestions?.mode ?? "offline");
       setActiveTab("suggestions");
     } catch (e) {
-      console.error(e);
-      setActionError(e?.response?.data?.detail || "Failed to get suggestions.");
+      setActionError("Failed to get suggestions.");
     } finally {
       setLoadingSuggest(false);
-    }
-  };
-
-  const handleJdMatch = async () => {
-    if (!jdText.trim() || jdText.trim().length < 20) {
-      setActionError("Paste a larger job description (at least 20 characters).");
-      return;
-    }
-
-    if (!file && !canUseTextFallback) {
-      setActionError("Re-upload resume to use this feature.");
-      return;
-    }
-
-    setLoadingJd(true);
-    setActionError("");
-    try {
-      const { data } = file
-        ? await jdMatch(file, jdText)
-        : await jdMatchFromText(result.text, jdText, skills);
-      setJdResult(data);
-    } catch (e) {
-      console.error(e);
-      setActionError(e?.response?.data?.detail || "Failed to run JD matching.");
-    } finally {
-      setLoadingJd(false);
     }
   };
 
@@ -154,10 +139,10 @@ export default function Dashboard() {
       setActionError("Re-upload resume to use this feature.");
       return;
     }
-
     setLoadingOptimize(true);
     setActionError("");
     try {
+<<<<<<< HEAD
       const { data } = file
         ? await optimizeResume(file)
         : await optimizeResumeFromText(result.text, skills);
@@ -181,26 +166,35 @@ export default function Dashboard() {
       console.log("Optimize response:", { raw: optimizeResult, processed: improvedText, mode });
       setOptimized(improvedText || "Unable to generate improvements. Try again.");
       setOptimizeMode(mode);
+=======
+      const { data } = file ? await optimizeResume(file) : await optimizeResumeFromText(result.text, skills);
+      const res = data.optimized;
+      setOptimized(typeof res === "string" ? res : res?.optimized || (res?.suggestions || []).join("\n"));
+      setOptimizeMode(res?.mode || "offline");
+>>>>>>> temp-save
       setActiveTab("fix");
     } catch (e) {
-      console.error(e);
-      setActionError(e?.response?.data?.detail || "Failed to optimize resume.");
+      setActionError("Failed to optimize resume.");
     } finally {
       setLoadingOptimize(false);
     }
   };
 
-  const handleDownloadOptimized = () => {
-    if (!optimized) return;
-    const blob = new Blob([optimized], { type: "text/plain" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "improved_resume.txt";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+  const handleJdMatch = async () => {
+    if (!jdText.trim() || jdText.length < 20) {
+      setActionError("Paste a longer job description.");
+      return;
+    }
+    setLoadingJd(true);
+    setActionError("");
+    try {
+      const { data } = file ? await jdMatch(file, jdText) : await jdMatchFromText(result.text, jdText, skills);
+      setJdResult(data);
+    } catch (e) {
+      setActionError("Failed to run JD match.");
+    } finally {
+      setLoadingJd(false);
+    }
   };
 
   const handleGenerateInterview = async () => {
@@ -209,6 +203,7 @@ export default function Dashboard() {
     try {
       const { data } = await generateInterviewQuestions(file);
       setInterviewData(data);
+      setActiveTab("interview");
     } catch (e) {
       console.error(e);
     } finally {
@@ -222,12 +217,12 @@ export default function Dashboard() {
     { id: "jobs", label: "Job Matches", icon: "💼" },
     { id: "fix", label: "Fix My Resume", icon: "✍️" },
     { id: "history", label: "History", icon: "🗂️" },
-    { id: "suggestions", label: "Get Suggestions", icon: "💡" },
   ];
 
   return (
-    <main style={{ padding: "40px 0 80px" }}>
+    <main style={{ padding: "40px 0 100px" }}>
       <div className="container">
+<<<<<<< HEAD
 
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40, flexWrap: "wrap", gap: 16 }}>
@@ -324,10 +319,67 @@ export default function Dashboard() {
                     <span style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--accent-2)" }}>
                       {Math.round((val / (breakdownMax[key] || 100)) * 100)}%
                     </span>
-                  </div>
-                ))}
-              </div>
+=======
+        {/* Header Section */}
+        <div style={{ marginBottom: 32, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 20 }}>
+          <div>
+            <h1 style={{ fontSize: "clamp(1.8rem, 4vw, 2.5rem)", fontWeight: 900, marginBottom: 8 }}>
+              Analysis for <span className="gradient-text">{filename}</span>
+            </h1>
+            <p style={{ color: "var(--text-secondary)", fontSize: "1.05rem" }}>Detailed breakdown of your resume's performance.</p>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <button className="btn btn-ghost" onClick={() => navigate("/")}>← Upload New</button>
+            <button className="btn btn-primary" onClick={() => navigate("/generate")}>🛠 Build Resume</button>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 32, alignItems: "start" }}>
+          <div>
+            {/* Tab Strip */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 24, overflowX: "auto", paddingBottom: 8 }}>
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  className={`btn ${activeTab === tab.id ? "btn-primary" : "btn-ghost"}`}
+                  onClick={() => handleOpenTab(tab.id)}
+                  style={{ whiteSpace: "nowrap", padding: "10px 20px" }}
+                >
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
             </div>
+
+            {/* Tab Content */}
+            <div className="tab-content">
+              {activeTab === "overview" && (
+                <div style={{ display: "grid", gap: 24 }}>
+                  {/* Score & Progress Panel */}
+                  <div className="card" style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 40, padding: 40, alignItems: "center" }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div className="section-title" style={{ justifyContent: "center", marginBottom: 20 }}>🎯 Overall Score</div>
+                      <ScoreGauge score={total} />
+                    </div>
+                    <div>
+                      <div className="section-title" style={{ marginBottom: 20 }}>📊 Detailed Breakdown</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px 40px" }}>
+                        {Object.entries(breakdown).map(([key, val]) => (
+                          <div key={key}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: "0.85rem" }}>
+                              <span style={{ fontWeight: 600, textTransform: "capitalize" }}>{key.replace(/_/g, " ")}</span>
+                              <span style={{ color: "var(--accent-1)", fontWeight: 700 }}>
+                                {Math.round((val / (breakdownMax[key] || 100)) * 100)}%
+                              </span>
+                            </div>
+                            <div className="progress-bar-track">
+                              <div className="progress-bar-fill" style={{ width: `${(val / (breakdownMax[key] || 100)) * 100}%` }}></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+>>>>>>> temp-save
+                  </div>
 
             {/* Suggestions & Weak Sections */}
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -370,6 +422,7 @@ export default function Dashboard() {
           </div>
         )}
 
+<<<<<<< HEAD
         {/* ─── SKILLS TAB ──────────────────────────────────── */}
         {activeTab === "skills" && (
           <div className="card">
@@ -400,12 +453,16 @@ export default function Dashboard() {
                     <span style={{ fontSize: "0.875rem", textTransform: "capitalize", color: found ? "var(--success)" : "var(--text-secondary)" }}>
                       {section}
                     </span>
+=======
+              {activeTab === "skills" && (
+                <div className="card">
+                  <div className="section-title">🧠 Extracted Skills ({skills.length})</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                    {skills.map(s => <SkillBadge key={s} skill={s} variant="primary" />)}
+>>>>>>> temp-save
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+                </div>
+              )}
 
         {/* ─── JOBS TAB ────────────────────────────────────── */}
         {activeTab === "jobs" && (
@@ -419,6 +476,7 @@ export default function Dashboard() {
           </div>
         )}
 
+<<<<<<< HEAD
 
         {/* ─── FIX TAB ─────────────────────────────────────── */}
         {activeTab === "fix" && (
@@ -557,41 +615,71 @@ export default function Dashboard() {
 
         {/* ─── HISTORY TAB ─────────────────────────────────── */}
         {activeTab === "history" && (
+=======
+        {/* ─── JD MATCH TAB ────────────────────────────────── */}
+        {activeTab === "jd" && (
+>>>>>>> temp-save
           <div className="card">
-            <div className="section-title">🗂️ Analysis History</div>
-            {loadingHistory ? (
-              <div style={{ padding: "16px 0", color: "var(--text-secondary)" }}>Loading history...</div>
-            ) : historyMsg ? (
-              <div style={{
-                marginTop: 8, padding: "14px 18px",
-                background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)",
-                borderRadius: "var(--radius-md)", color: "var(--warning)", fontSize: "0.9rem",
-              }}>
-                {historyMsg}
-              </div>
-            ) : historyItems.length === 0 ? (
-              <div style={{ padding: "16px 0", color: "var(--text-muted)" }}>No history yet.</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
-                {historyItems.map((item, idx) => (
-                  <div key={`${item.filename}-${idx}`} style={{
-                    padding: "14px 16px", borderRadius: "var(--radius-md)",
-                    border: "1px solid var(--border)", background: "var(--bg-surface)",
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                      <strong style={{ color: "var(--text-primary)" }}>{item.filename || "Untitled resume"}</strong>
-                      <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Score: {item?.score?.total ?? "N/A"}</span>
+            <div className="section-title">🧩 Resume vs Job Description</div>
+            <p style={{ color: "var(--text-secondary)", marginBottom: 14, fontSize: "0.92rem" }}>
+              Paste a job description to calculate match percentage and missing skills.
+            </p>
+
+            <textarea
+              className="resume-textarea"
+              style={{ minHeight: 180 }}
+              value={jdText}
+              onChange={(e) => setJdText(e.target.value)}
+              placeholder="Paste job description here..."
+            />
+
+            <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+              <button className="btn btn-primary" onClick={handleJdMatch} disabled={loadingJd || (!file && !canUseTextFallback)}>
+                {loadingJd ? "Matching…" : "Run Match"}
+              </button>
+              <button className="btn btn-ghost" onClick={() => { setJdResult(null); setJdText(""); }}>
+                Clear
+              </button>
+            </div>
+
+            {jdResult && (
+              <div style={{ marginTop: 22, display: "grid", gap: 16 }}>
+                <div style={{
+                  padding: "14px 18px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid rgba(34,211,164,0.2)",
+                  background: "rgba(34,211,164,0.08)",
+                }}>
+                  <strong style={{ color: "var(--text-primary)", fontSize: "1rem" }}>Match Score: {jdResult.match_percent}%</strong>
+                </div>
+
+                <div>
+                  <div className="section-title" style={{ fontSize: "0.95rem" }}>✅ Matched Skills</div>
+                  {jdResult.matched_skills?.length ? (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {jdResult.matched_skills.map((s) => <SkillBadge key={s} skill={s} variant="success" />)}
                     </div>
-                    <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                      Skills: {item.skills?.length ?? 0} · Matches: {item.job_matches?.length ?? 0}
-                    </p>
-                  </div>
-                ))}
+                  ) : (
+                    <p style={{ color: "var(--text-muted)" }}>No strong overlap found.</p>
+                  )}
+                </div>
+
+                <div>
+                  <div className="section-title" style={{ fontSize: "0.95rem" }}>⚠️ Missing Skills</div>
+                  {jdResult.missing_skills?.length ? (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {jdResult.missing_skills.map((s) => <SkillBadge key={s} skill={s} variant="warning" />)}
+                    </div>
+                  ) : (
+                    <p style={{ color: "var(--success)" }}>Great fit. No missing skills detected from the JD keywords.</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
         )}
 
+<<<<<<< HEAD
         {/* ─── SUGGESTIONS TAB ─────────────────────────────── */}
         {activeTab === "suggestions" && (
           <div className="card">
@@ -610,6 +698,116 @@ export default function Dashboard() {
               )}
             </div>
 
+=======
+        {/* ─── FIX TAB ─────────────────────────────────────── */}
+        {activeTab === "fix" && (
+          <div>
+            {/* Header section */}
+            <div className="card" style={{ marginBottom: 24 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                <div>
+                  <h2 style={{ fontSize: "1.8rem", fontWeight: 800, marginBottom: 8 }}>✨ Resume Improvement Dashboard</h2>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
+                    Compare your original resume with AI-enhanced version
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {optimizeMode === "ai" && (
+                    <span style={{
+                      fontSize: "0.72rem",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                      padding: "5px 12px",
+                      borderRadius: 99,
+                      background: "rgba(34,211,164,0.12)",
+                      color: "var(--success)",
+                      border: "1px solid rgba(34,211,164,0.3)",
+                    }}>
+                      ✨ AI Rewrite
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "interview" && (
+                <div className="card">
+                  <div className="section-title">🎤 Interview Preparation</div>
+                  {!interviewData ? (
+                    <button className="btn btn-primary" onClick={handleGenerateInterview} disabled={loadingInterview}>
+                      {loadingInterview ? "Generating..." : "Generate Interview Questions"}
+                    </button>
+                  ) : (
+                    <div style={{ display: "grid", gap: 24 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: "var(--accent-1)", marginBottom: 12 }}>Technical Questions</div>
+                        <ul style={{ paddingLeft: 20 }}>{interviewData.questions.technical.map((q, i) => <li key={i} style={{ marginBottom: 8 }}>{q}</li>)}</ul>
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: "var(--accent-2)", marginBottom: 12 }}>Behavioral Questions</div>
+                        <ul style={{ paddingLeft: 20 }}>{interviewData.questions.behavioral.map((q, i) => <li key={i} style={{ marginBottom: 8 }}>{q}</li>)}</ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ─── HISTORY TAB ─────────────────────────────────── */}
+              {activeTab === "history" && (
+                <div className="card">
+                  <div className="section-title">🗂️ Analysis History</div>
+                  {loadingHistory ? (
+                    <div style={{ padding: "16px 0", color: "var(--text-secondary)" }}>Loading history...</div>
+                  ) : historyMsg ? (
+                    <div style={{
+                      marginTop: 8, padding: "14px 18px",
+                      background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)",
+                      borderRadius: "var(--radius-md)", color: "var(--warning)", fontSize: "0.9rem",
+                    }}>
+                      {historyMsg}
+                    </div>
+                  ) : historyItems.length === 0 ? (
+                    <div style={{ padding: "16px 0", color: "var(--text-muted)" }}>No history yet.</div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
+                      {historyItems.map((item, idx) => (
+                        <div key={`${item.filename}-${idx}`} style={{
+                          padding: "14px 16px", borderRadius: "var(--radius-md)",
+                          border: "1px solid var(--border)", background: "var(--bg-surface)",
+                        }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                            <strong style={{ color: "var(--text-primary)" }}>{item.filename || "Untitled resume"}</strong>
+                            <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Score: {item?.score?.total ?? "N/A"}</span>
+                          </div>
+                          <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                            Skills: {item.skills?.length ?? 0} · Matches: {item.job_matches?.length ?? 0}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ─── SUGGESTIONS TAB ─────────────────────────────── */}
+              {activeTab === "suggestions" && (
+                <div className="card">
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                    <div className="section-title" style={{ margin: 0 }}>💡 Get Suggestions</div>
+                    {suggestMode === "ai" && (
+                      <span style={{
+                        fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
+                        padding: "3px 10px", borderRadius: 99,
+                        background: suggestMode === "ai" ? "rgba(34,211,164,0.12)" : "rgba(245,158,11,0.12)",
+                        color: suggestMode === "ai" ? "var(--success)" : "var(--warning)",
+                        border: `1px solid ${suggestMode === "ai" ? "rgba(34,211,164,0.3)" : "rgba(245,158,11,0.3)"}`,
+                      }}>
+                        ✨ AI Mode
+                      </span>
+                    )}
+                  </div>
+
+>>>>>>> temp-save
             {/* Actionable Suggestions */}
             <div style={{ background: "rgba(34,211,164,0.05)", border: "1px solid rgba(34,211,164,0.15)", borderRadius: "var(--radius-md)", padding: "20px" }}>
               <h3 style={{ fontSize: "1.1rem", color: "var(--success)", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
@@ -630,6 +828,8 @@ export default function Dashboard() {
                   </p>
                   <button className="btn btn-primary" onClick={handleSuggest} disabled={loadingSuggest || (!file && !canUseTextFallback)}>
                     {loadingSuggest ? "Loading…" : "💡 Get Suggestions"}
+<<<<<<< HEAD
+=======
                   </button>
                 </div>
               )}
@@ -637,7 +837,107 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ─── INTERVIEW PREP TAB ───────────────────────────── */}
+        {activeTab === "interview" && (
+          <div className="card">
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+              <div className="section-title" style={{ margin: 0 }}>🎤 Interview Prep</div>
+              {interviewData?.mode === "ai" && (
+                <span style={{
+                  fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
+                  padding: "3px 10px", borderRadius: 99, background: "rgba(34,211,164,0.12)",
+                  color: "var(--success)", border: "1px solid rgba(34,211,164,0.3)"
+                }}>✨ AI Mode</span>
+              )}
+            </div>
+            <p style={{ color: "var(--text-secondary)", marginBottom: 20, fontSize: "0.9rem" }}>
+              Get tailored interview questions based on your resume and detected best role.
+            </p>
 
+            {!interviewData ? (
+              <div style={{ textAlign: "center", padding: "32px 0" }}>
+                <p style={{ color: "var(--text-secondary)", marginBottom: 24 }}>
+                  {!file ? "Re-upload your resume to generate interview questions." : "Click below to generate questions tailored to your background."}
+                </p>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleGenerateInterview}
+                  disabled={loadingInterview || !file}
+                >
+                  {loadingInterview ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Generating…</> : "🎤 Generate Questions"}
+                </button>
+              </div>
+            ) : (
+              <div>
+                {interviewData.role && (
+                  <div style={{
+                    marginBottom: 20, padding: "10px 16px", borderRadius: "var(--radius-sm)",
+                    background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)",
+                    color: "var(--text-secondary)", fontSize: "0.875rem"
+                  }}>
+                    🎯 Questions tailored for: <strong style={{ color: "var(--text-primary)" }}>{interviewData.role}</strong>
+                  </div>
+                )}
+
+                {/* Technical Questions */}
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12, color: "var(--accent-2)" }}>⚙️ Technical Questions</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {(interviewData.questions?.technical || []).map((q, i) => (
+                      <div key={i} style={{
+                        display: "flex", gap: 14, alignItems: "flex-start",
+                        padding: "14px 18px", borderRadius: "var(--radius-md)",
+                        background: "var(--bg-surface)", border: "1px solid var(--border)"
+                      }}>
+                        <div style={{
+                          minWidth: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                          background: "linear-gradient(135deg, var(--accent-1), var(--accent-2))",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: "0.8rem", fontWeight: 700, color: "#fff"
+                        }}>{i + 1}</div>
+                        <p style={{ fontSize: "0.92rem", lineHeight: 1.65, color: "var(--text-primary)", margin: 0, paddingTop: 3 }}>{q}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Behavioral Questions */}
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 12, color: "#f59e0b" }}>🤝 Behavioral Questions</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {(interviewData.questions?.behavioral || []).map((q, i) => (
+                      <div key={i} style={{
+                        display: "flex", gap: 14, alignItems: "flex-start",
+                        padding: "14px 18px", borderRadius: "var(--radius-md)",
+                        background: "var(--bg-surface)", border: "1px solid rgba(245,158,11,0.2)"
+                      }}>
+                        <div style={{
+                          minWidth: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                          background: "linear-gradient(135deg, #f59e0b, #f97316)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: "0.8rem", fontWeight: 700, color: "#fff"
+                        }}>{i + 1}</div>
+                        <p style={{ fontSize: "0.92rem", lineHeight: 1.65, color: "var(--text-primary)", margin: 0, paddingTop: 3 }}>{q}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 20 }}>
+                  <button className="btn btn-ghost" onClick={handleGenerateInterview} disabled={loadingInterview || !file}>
+                    {loadingInterview ? "Regenerating…" : "🔄 Regenerate"}
+>>>>>>> temp-save
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+<<<<<<< HEAD
+
+=======
+>>>>>>> temp-save
       </div>
     </main>
   );
