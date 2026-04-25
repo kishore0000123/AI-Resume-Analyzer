@@ -19,6 +19,57 @@ function getSavedBuilderDraft() {
   }
 }
 
+<<<<<<< HEAD
+function splitLines(value) {
+  return (value || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function splitSkills(value) {
+  return (value || "")
+    .split(",")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function sectionHeading(text, color = "111827") {
+  return new Paragraph({
+    spacing: { before: 280, after: 120 },
+    border: {
+      bottom: { color, size: 6, space: 1 },
+    },
+    children: [
+      new TextRun({ text, bold: true, color, size: 22 }),
+    ],
+  });
+}
+
+function sectionBodyLines(lines, color = "1F2937") {
+  return lines.map(
+    (line) =>
+      new Paragraph({
+        spacing: { after: 70 },
+        children: [new TextRun({ text: line, color, size: 22 })],
+      })
+  );
+}
+
+function sectionBulletLines(lines, color = "1F2937") {
+  return lines.map(
+    (line) =>
+      new Paragraph({
+        bullet: { level: 0 },
+        spacing: { after: 70 },
+        children: [new TextRun({ text: line, color, size: 22 })],
+      })
+  );
+}
+
+
+=======
+>>>>>>> ef934b221b6e151f23db98c43529244412f521dd
 export default function PreviewResume() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -70,6 +121,26 @@ export default function PreviewResume() {
     setIsDownloadingPdf(true);
     setCurrentStep(3);
 
+<<<<<<< HEAD
+    const html2pdf = (await import("html2pdf.js")).default;
+
+    html2pdf()
+      .set({
+        margin: 8,
+        filename: "generated_resume.pdf",
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      })
+      .from(previewEl)
+      .save()
+      .then(() => setFeedback({ type: "success", text: "PDF downloaded successfully." }))
+      .catch(() => setFeedback({ type: "error", text: "Failed to download PDF." }))
+      .finally(() => setIsDownloadingPdf(false));
+  };
+
+
+=======
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       await html2pdf()
@@ -93,6 +164,7 @@ export default function PreviewResume() {
   };
 
   const createNewResume = () => {
+>>>>>>> ef934b221b6e151f23db98c43529244412f521dd
     sessionStorage.removeItem("resume_builder_draft");
     navigate("/generate");
   };

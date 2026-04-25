@@ -98,17 +98,21 @@ export default function GenerateResume() {
     if (initial?.form) {
       setForm((prev) => ({ ...prev, ...initial.form }));
       if (initial.selectedTemplate) setSelectedTemplate(initial.selectedTemplate);
+    } else if (analysis?.text) {
+      const detectedName = parseNameFromText(analysis.text);
+      setForm((prev) => ({
+        ...prev,
+        name: detectedName,
+        skills: (analysis.skills || []).join(", "),
+      }));
     }
-    didInitDraft.current = true;
-  }, [location.state]);
 
-  useEffect(() => {
-    const payload = JSON.stringify({ form, selectedTemplate });
-    sessionStorage.setItem(BUILDER_DRAFT_KEY, payload);
-    localStorage.setItem(BUILDER_DRAFT_KEY, payload);
-  }, [form, selectedTemplate]);
+    const templateFromUrl = searchParams.get("template");
+    if (templateFromUrl) {
+      const exists = templateOptions.find((t) => t.id === templateFromUrl);
+      if (exists) setSelectedTemplate(templateFromUrl);
+    }
 
-  useEffect(() => {
     const section = searchParams.get("section");
     const refMap = {
       summary: summaryRef,
@@ -122,138 +126,107 @@ export default function GenerateResume() {
       targetRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
       targetRef.current.focus();
     }
-  }, [searchParams]);
 
+
+    didInitDraft.current = true;
+  }, [analysis, location.state, searchParams]);
+  useEffect(() => {
+    if (hasAnyContent) {
+      const timer = setTimeout(() => {
+        const draft = { form, selectedTemplate };
+        sessionStorage.setItem(BUILDER_DRAFT_KEY, JSON.stringify(draft));
+        localStorage.setItem(BUILDER_DRAFT_KEY, JSON.stringify(draft));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [form, selectedTemplate, hasAnyContent]);
+
+  const handleInputChange = (field, value) => {
   const updateField = (field, value) => {
+ ef934b221b6e151f23db98c43529244412f521dd
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleBlur = (field) => {
-    setTouched((prev) => ({ ...prev, [field]: true }));
+  const handleAutofill = (section, content) => {
+    handleInputChange(section, content);
+    setFeedback({ type: "success", text: `Autofilled ${section}!` });
+    setTimeout(() => setFeedback({ type: "", text: "" }), 3000);
   };
 
-  const showFieldError = (field) => Boolean((touched[field] || submitAttempted) && fieldErrors[field]);
-
-  const validateForm = () => {
+  const validateAndPreview = () => {
     setSubmitAttempted(true);
-    const invalid = requiredFields.filter((field) => fieldErrors[field]);
-    if (invalid.length > 0) {
-      setTouched((prev) => ({
-        ...prev,
-        ...Object.fromEntries(requiredFields.map((f) => [f, true])),
-      }));
-    }
-    return invalid;
-  };
-
-  const autofillFromAnalysis = () => {
-    if (!analysis) {
-      setFeedback({ type: "error", text: "No analysis found. Analyze a resume first." });
+    if (hasRequiredMissing) {
+      const firstErrorField = requiredFields.find((f) => fieldErrors[f]);
+      const refMap = {
+        summary: summaryRef,
+        skills: skillsRef,
+        experience: experienceRef,
+      };
+      refMap[firstErrorField]?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setFeedback({ type: "error", text: "Please fill all required fields correctly." });
       return;
     }
-
-    const skills = (analysis.skills || []).join(", ");
-    const strengths = analysis.score?.strengths?.slice(0, 2).join(" ") || "";
-    const bestRole = analysis.best_role?.role || "";
-    const summary = [
-      bestRole ? `Aspiring ${bestRole} with hands-on project experience.` : "Motivated candidate with practical technical project experience.",
-      strengths,
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    const projectLines = (analysis.job_matches || [])
-      .slice(0, 2)
-      .map((job) => `Built portfolio projects aligned with ${job.role} competencies (${job.match_percent}% match).`)
-      .join("\n");
-
-    setForm((prev) => ({
-      ...prev,
-      name: prev.name || parseNameFromText(analysis.text),
-      skills: prev.skills || skills,
-      summary: prev.summary || summary,
-      projects: prev.projects || projectLines,
-    }));
-
-    setFeedback({ type: "success", text: "Autofill complete. Review fields and continue." });
-  };
-
-  const goToPreview = () => {
-    const invalid = validateForm();
-    if (invalid.length > 0) {
-      setFeedback({ type: "error", text: "Please fix highlighted required fields before preview." });
-      return;
-    }
-
-    setFeedback({ type: "", text: "" });
-    navigate("/preview", {
-      state: {
-        draft: {
-          form,
-          selectedTemplate,
-        },
-      },
-    });
+    const draft = { form, selectedTemplate };
+    sessionStorage.setItem("resume_builder_draft", JSON.stringify(draft));
+    navigate("/preview");
   };
 
   return (
-    <main style={{ padding: "40px 0 80px" }}>
-      <div className="container" style={{ maxWidth: 1240 }}>
-        <div className="card section-fade section-fade-1" style={{ marginBottom: 20 }}>
-          <div className="section-title">🧾 Resume Generator</div>
-          <StepIndicator currentStep={hasAnyContent ? 2 : 1} steps={["Fill Details", "Live Preview", "Download"]} />
-          <p style={{ color: "var(--text-secondary)", marginBottom: 18 }}>
-            Fill the form, then click Live Preview to open preview and download options.
-          </p>
-
-
-          <div className="builder-actions">
-            <button className="btn btn-ghost" onClick={autofillFromAnalysis}>✨ Autofill From Analyzer</button>
-            <button className="btn btn-primary" onClick={goToPreview}>👁 Live Preview</button>
+    <main style={{ padding: "40px 0 100px" }}>
+      <div className="container">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+          <h1 style={{ fontSize: "2rem", fontWeight: 800 }}>🛠 Resume Builder</h1>
+          <div style={{ display: "flex", gap: 12 }}>
+            <button className="btn btn-ghost" onClick={() => navigate("/dashboard")}>← Back to Dashboard</button>
+            <button className="btn btn-primary" onClick={validateAndPreview}>Preview & Download →</button>
           </div>
-
-          {feedback.text && (
-            <div
-              style={{
-                marginTop: 14,
-                padding: "10px 12px",
-                borderRadius: "var(--radius-sm)",
-                border: `1px solid ${feedback.type === "error" ? "rgba(244,63,94,0.35)" : "rgba(34,211,164,0.35)"}`,
-                background: feedback.type === "error" ? "rgba(244,63,94,0.1)" : "rgba(34,211,164,0.1)",
-                color: feedback.type === "error" ? "var(--danger)" : "var(--success)",
-                fontSize: "0.9rem",
-              }}
-            >
-              {feedback.text}
-            </div>
-          )}
         </div>
 
-        <div className="generate-layout">
-          <div className="card section-fade section-fade-2" style={{ marginBottom: 20 }}>
-            <div className="section-title">✍️ Resume Form</div>
+        <StepIndicator currentStep={2} />
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 32, alignItems: "start" }}>
+          <div className="card">
+            <div style={{ marginBottom: 24 }}>
+              <div className="section-title">🎨 Choose Template</div>
+              <div style={{ display: "flex", gap: 10 }}>
+                {templateOptions.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTemplate(t.id)}
+                    className={`btn ${selectedTemplate === t.id ? "btn-primary" : "btn-ghost"}`}
+                    style={{ flex: 1, fontSize: "0.85rem" }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <ResumeForm
               form={form}
-              updateField={updateField}
-              handleBlur={handleBlur}
-              showFieldError={showFieldError}
-              fieldErrors={fieldErrors}
+              onChange={handleInputChange}
+              onAutofill={handleAutofill}
+              analysis={analysis}
+              errors={submitAttempted ? fieldErrors : {}}
               refs={{ summaryRef, skillsRef, projectsRef, experienceRef, educationRef }}
             />
+
+            {feedback.text && (
+              <div style={{ marginTop: 20, padding: "12px 16px", borderRadius: "var(--radius-sm)", background: feedback.type === "success" ? "rgba(34,211,164,0.1)" : "rgba(244,63,94,0.1)", border: `1px solid ${feedback.type === "success" ? "var(--success)" : "var(--danger)"}`, color: feedback.type === "success" ? "var(--success)" : "var(--danger)", fontSize: "0.9rem" }}>
+                {feedback.text}
+              </div>
+            )}
           </div>
 
-          <div className="preview-sticky">
-            <div className="card section-fade section-fade-3" style={{ marginBottom: 20 }}>
-              <div className="section-title">👀 Live Preview</div>
-              {hasAnyContent ? (
-                <ResumePreview form={form} selectedTemplate={selectedTemplate} previewId="generate-live-preview" />
-              ) : (
-                <p style={{ color: "var(--text-muted)" }}>Start typing in the form to see live preview.</p>
-              )}
+          <div style={{ position: "sticky", top: 40 }}>
+            <div className="section-title">📄 Live Preview</div>
+            <div className="preview-container" style={{ maxHeight: "calc(100vh - 160px)", overflowY: "auto", borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "#fff", boxShadow: "var(--shadow-lg)" }}>
+              <ResumePreview data={form} template={selectedTemplate} />
             </div>
           </div>
         </div>
       </div>
     </main>
   );
+}
 }
