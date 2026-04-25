@@ -18,8 +18,6 @@ function getSavedBuilderDraft() {
     return null;
   }
 }
-
-<<<<<<< HEAD
 function splitLines(value) {
   return (value || "")
     .split("\n")
@@ -66,10 +64,6 @@ function sectionBulletLines(lines, color = "1F2937") {
       })
   );
 }
-
-
-=======
->>>>>>> ef934b221b6e151f23db98c43529244412f521dd
 export default function PreviewResume() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -120,8 +114,6 @@ export default function PreviewResume() {
 
     setIsDownloadingPdf(true);
     setCurrentStep(3);
-
-<<<<<<< HEAD
     const html2pdf = (await import("html2pdf.js")).default;
 
     html2pdf()
@@ -139,8 +131,6 @@ export default function PreviewResume() {
       .finally(() => setIsDownloadingPdf(false));
   };
 
-
-=======
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       await html2pdf()
@@ -164,7 +154,6 @@ export default function PreviewResume() {
   };
 
   const createNewResume = () => {
->>>>>>> ef934b221b6e151f23db98c43529244412f521dd
     sessionStorage.removeItem("resume_builder_draft");
     navigate("/generate");
   };
@@ -249,4 +238,3 @@ export default function PreviewResume() {
       </div>
     </main>
   );
-}

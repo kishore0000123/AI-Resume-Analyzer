@@ -1,10 +1,9 @@
+from turtle import save
+
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
-<<<<<<< HEAD
-<<<<<<< HEAD
 from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db, jd_match, generate_interview_questions
-=======
-<<<<<<< HEAD
+
 from services import (
     extract_text_from_bytes, 
     extract_skills, 
@@ -16,13 +15,9 @@ from services import (
     get_db, 
     jd_match
 )
-=======
 from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db, jd_match, generate_interview_questions
->>>>>>> 8bd51f8 (feat: upgrade resume analyzer UI and backend services)
->>>>>>> temp-save
-=======
-from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db
->>>>>>> ef934b221b6e151f23db98c43529244412f521dd
+
+from services import extract_text_from_bytes, extract_skills, score_resume, match_jobs, best_role, get_suggestions, optimize_resume, get_db 
 import datetime
 
 router = APIRouter()
@@ -32,31 +27,21 @@ LOW_TEXT_ERROR = (
     "It may be a scanned or image-only PDF. Please upload a text-based PDF "
     "or run OCR first."
 )
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 class ChatRequest(BaseModel):
     question: str
 
->>>>>>> temp-save
-=======
 class ChatRequest(BaseModel):
     question: str
 
->>>>>>> ef934b221b6e151f23db98c43529244412f521dd
+
 class ResumeTextRequest(BaseModel):
     text: str
     skills: list[str] = []
 
-<<<<<<< HEAD
 class JDTextRequest(BaseModel):
     resume_text: str
     jd_text: str
     skills: list[str] = []
-
-=======
->>>>>>> ef934b221b6e151f23db98c43529244412f521dd
 @router.get("/")
 def home():
     return {"message": "AI Resume Analyzer API is running"}
@@ -207,9 +192,6 @@ def optimize_resume_from_text(payload: ResumeTextRequest):
 
 
 @router.post("/jd-match")
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
 def match_against_jd(payload: JDTextRequest):
     """Match resume against a specific job description."""
     text = (payload.resume_text or "").strip()
@@ -220,8 +202,6 @@ def match_against_jd(payload: JDTextRequest):
     skills = payload.skills or extract_skills(text)
     match_result = jd_match(text, jd, skills)
     return match_result
-=======
->>>>>>> temp-save
 async def jd_match_endpoint(file: UploadFile = File(...), jd_text: str = Form(...)):
     """Match resume against job description."""
     try:
@@ -280,12 +260,6 @@ async def interview_questions_endpoint(file: UploadFile = File(...)):
     result = generate_interview_questions(text, role_name, skills)
     return result
 
-<<<<<<< HEAD
-=======
->>>>>>> 8bd51f8 (feat: upgrade resume analyzer UI and backend services)
->>>>>>> temp-save
-
-
 @router.get("/history")
 def get_history(limit: int = 20):
     """Return recent analyzed resumes from MongoDB if available."""
@@ -301,12 +275,6 @@ def get_history(limit: int = 20):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch history: {e}")
 
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> ef934b221b6e151f23db98c43529244412f521dd
 @router.post("/chat")
 def chat_with_bot(payload: ChatRequest):
     """Mentor bot endpoint for frontend chat UI."""
@@ -319,7 +287,4 @@ def chat_with_bot(payload: ChatRequest):
         return get_chat_reply(question)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate bot reply: {e}")
-<<<<<<< HEAD
->>>>>>> temp-save
-=======
->>>>>>> ef934b221b6e151f23db98c43529244412f521dd
+
